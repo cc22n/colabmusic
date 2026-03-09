@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title }} — ColabMusic{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-8 max-w-4xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+    <div class="flex-1">
+      <div class="flex items-center gap-2 mb-2 flex-wrap">
+        <span class="text-xs px-2 py-1 rounded-full font-medium
+          {% if project.project_type == 'cover' %}bg-blue-900 text-blue-300
+          {% else %}bg-purple-900 text-purple-300{% endif %}">
+          {{ project.get_project_type_display }}
+        </span>
+        <span class="text-xs px-2 py-1 rounded-full font-medium
+          {% if project.status == 'seeking_lyrics' %}bg-yellow-900 text-yellow-300
+          {% elif project.status == 'seeking_beat' %}bg-orange-900 text-orange-300
+          {% elif project.status == 'seeking_vocals' %}bg-pink-900 text-pink-300
+          {% elif project.status == 'in_review' %}bg-blue-900 text-blue-300
+          {% elif project.status == 'complete' %}bg-green-900 text-green-300
+          {% else %}bg-gray-800 text-gray-500{% endif %}">
+          {{ project.get_status_display }}
+        </span>
+        {% if project.genre %}
+        <span class="text-xs text-gray-500">{{ project.genre.name }}</span>
+        {% endif %}
+      </div>
+
+      <h1 class="text-3xl font-bold text-white">{{ project.title }}</h1>
+      <p class="text-gray-400 text-sm mt-1">
+        por <a href="/accounts/profile/{{ project.created_by.username }}/" class="text-purple-400 hover:text-purple-300">{{ project.created_by.username }}</a>
+        · {{ project.created_at|date:"d M Y" }}
+      </p>
+
+      {% if project.description %}
+      <p class="text-gray-300 mt-3">{{ project.description }}</p>
+      {% endif %}
+
+      {% if project.tags.all %}
+      <div class="flex flex-wrap gap-1 mt-3">
+        {% for tag in project.tags.all %}
+        <span class="text-xs px-2 py-0.5 bg-gray-800 text-gray-400 rounded-full">#{{ tag.name }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% if can_edit %}
+    <a href="{% url 'projects:edit' slug=project.slug %}"
+       class="shrink-0 px-4 py-2 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 rounded-lg text-sm transition-colors">
+      Editar proyecto
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- ── LETRAS ──────────────────────────────────────────────── -->
+  {% if project.status == 'seeking_lyrics' or lyrics_list %}
+  <section class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+    <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+      ✍️ Letras
+      <span class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{{ lyrics_list|length }}</span>
+    </h2>
+
+    <!-- Submit form (solo si el proyecto acepta letras) -->
+    {% if project.status == 'seeking_lyrics' and user.is_authenticated %}
+    <div class="mb-6" x-data="{ open: false }">
+      <button @click="open = !open"
+              class="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 mb-3 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Enviar mi letra
+      </button>
+      <div x-show="open" x-transition
+           id="lyrics-form-container"
+           hx-get="{% url 'projects:submit-lyrics' slug=project.slug %}"
+           hx-trigger="revealed"
+           hx-swap="innerHTML">
+        <div class="text-gray-500 text-sm animate-pulse">Cargando formulario...</div>
+      </div>
+    </div>
+    {% elif project.status == 'seeking_lyrics' and not user.is_authenticated %}
+    <p class="text-sm text-gray-500 mb-4">
+      <a href="/accounts/login/" class="text-purple-400 hover:text-purple-300">Inicia sesión</a> para enviar tu letra.
+    </p>
+    {% endif %}
+
+    <!-- Lyrics list -->
+    <div id="lyrics-list" class="flex flex-col gap-4">
+      {% for lyrics in lyrics_list %}
+        {% include "projects/partials/lyrics_item.html" with can_select=can_edit %}
+      {% empty %}
+      <p class="text-gray-500 text-sm">Aún no hay letras. ¡Sé el primero en enviar una!</p>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- ── BEATS ───────────────────────────────────────────────── -->
+  {% if project.status == 'seeking_beat' or beats_list %}
+  <section class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+    <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+      🎹 Beats
+      <span class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{{ beats_list|length }}</span>
+    </h2>
+
+    {% if project.status == 'seeking_beat' and user.is_authenticated %}
+    <div class="mb-6" x-data="{ open: false }">
+      <button @click="open = !open"
+              class="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 mb-3 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Subir mi beat
+      </button>
+      <div x-show="open" x-transition
+           id="beat-form-container"
+           hx-get="{% url 'projects:submit-beat' slug=project.slug %}"
+           hx-trigger="revealed"
+           hx-swap="innerHTML">
+        <div class="text-gray-500 text-sm animate-pulse">Cargando formulario...</div>
+      </div>
+    </div>
+    {% elif project.status == 'seeking_beat' and not user.is_authenticated %}
+    <p class="text-sm text-gray-500 mb-4">
+      <a href="/accounts/login/" class="text-purple-400 hover:text-purple-300">Inicia sesión</a> para subir un beat.
+    </p>
+    {% endif %}
+
+    <div id="beats-list" class="flex flex-col gap-4">
+      {% for beat in beats_list %}
+        {% include "projects/partials/beat_item.html" with can_select=can_edit %}
+      {% empty %}
+      <p class="text-gray-500 text-sm">Aún no hay beats. ¡Sé el primero en subir uno!</p>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- ── VOCALES ─────────────────────────────────────────────── -->
+  {% if project.status == 'seeking_vocals' or vocal_tracks_list %}
+  <section class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+    <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+      🎤 Vocales
+      <span class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{{ vocal_tracks_list|length }}</span>
+    </h2>
+
+    {% if project.status == 'seeking_vocals' and user.is_authenticated %}
+    <div class="mb-6" x-data="{ open: false }">
+      <button @click="open = !open"
+              class="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 mb-3 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Subir mi vocal
+      </button>
+      <div x-show="open" x-transition
+           id="vocal-form-container"
+           hx-get="{% url 'projects:submit-vocal' slug=project.slug %}"
+           hx-trigger="revealed"
+           hx-swap="innerHTML">
+        <div class="text-gray-500 text-sm animate-pulse">Cargando formulario...</div>
+      </div>
+    </div>
+    {% elif project.status == 'seeking_vocals' and not user.is_authenticated %}
+    <p class="text-sm text-gray-500 mb-4">
+      <a href="/accounts/login/" class="text-purple-400 hover:text-purple-300">Inicia sesión</a> para subir tu vocal.
+    </p>
+    {% endif %}
+
+    <div id="vocals-list" class="flex flex-col gap-4">
+      {% for vocal in vocal_tracks_list %}
+        {% include "projects/partials/vocal_item.html" with can_select=can_edit %}
+      {% empty %}
+      <p class="text-gray-500 text-sm">Aún no hay vocales.</p>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- ── MIX FINAL ───────────────────────────────────────────── -->
+  {% if final_mix %}
+  <section class="bg-gradient-to-br from-purple-900/40 to-gray-900 border border-purple-800 rounded-xl p-6">
+    <h2 class="text-xl font-semibold text-white mb-2">🎵 Mix Final</h2>
+    <p class="text-gray-400 text-sm">{{ final_mix.play_count }} reproducciones</p>
+    {% if final_mix.processing_status == 'ready' %}
+    <p class="text-green-400 text-sm mt-2">Listo para reproducir</p>
+    {% else %}
+    <p class="text-yellow-400 text-sm mt-2 animate-pulse">Procesando audio...</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+</div>
+{% endblock %}

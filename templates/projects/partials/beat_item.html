@@ -1,0 +1,54 @@
+{% comment %}
+Partial HTMX: un beat enviado.
+Contexto: beat, project, can_select
+{% endcomment %}
+<div class="bg-gray-800 rounded-lg p-4 border {% if beat.is_selected %}border-green-600{% else %}border-gray-700{% endif %}">
+  <div class="flex items-start justify-between gap-3 mb-2">
+    <div>
+      <span class="text-sm font-medium text-white">{{ beat.producer.username }}</span>
+      <span class="text-xs text-gray-500 ml-2">{{ beat.created_at|date:"d M Y" }}</span>
+      {% if beat.bpm %}
+      <span class="text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded ml-2">{{ beat.bpm }} BPM</span>
+      {% endif %}
+      {% if beat.key_signature %}
+      <span class="text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded ml-1">{{ beat.key_signature }}</span>
+      {% endif %}
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      {% if beat.is_selected %}
+      <span class="inline-flex items-center gap-1 text-green-400 text-xs font-medium">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Seleccionado
+      </span>
+      {% elif can_select %}
+      <button
+        hx-post="{% url 'projects:select' slug=project.slug contribution_type='beat' pk=beat.pk %}"
+        hx-target="this"
+        hx-swap="outerHTML"
+        class="text-xs px-3 py-1 border border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white rounded-lg transition-colors">
+        Seleccionar
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if beat.description %}
+  <p class="text-gray-400 text-sm">{{ beat.description }}</p>
+  {% endif %}
+
+  <div class="flex items-center gap-3 mt-2">
+    <span class="text-xs text-gray-600">{{ beat.audio_format|upper }}</span>
+    <span class="text-xs px-2 py-0.5 rounded-full
+      {% if beat.processing_status == 'ready' %}bg-green-900 text-green-400
+      {% elif beat.processing_status == 'processing' %}bg-yellow-900 text-yellow-400
+      {% elif beat.processing_status == 'failed' %}bg-red-900 text-red-400
+      {% else %}bg-gray-700 text-gray-500{% endif %}">
+      {% if beat.processing_status == 'ready' %}Listo
+      {% elif beat.processing_status == 'processing' %}Procesando...
+      {% elif beat.processing_status == 'failed' %}Error
+      {% else %}En cola{% endif %}
+    </span>
+  </div>
+</div>

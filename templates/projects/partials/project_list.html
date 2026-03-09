@@ -1,0 +1,34 @@
+{% comment %}Partial HTMX: solo la grilla de proyectos + paginación{% endcomment %}
+{% if projects %}
+<div id="project-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+  {% for project in projects %}
+    {% include "components/project_card.html" %}
+  {% endfor %}
+</div>
+
+{% if is_paginated %}
+<div class="flex justify-center gap-2 mt-8">
+  {% if page_obj.has_previous %}
+  <a href="?page={{ page_obj.previous_page_number }}{% for k,v in current_filters.items %}{% if v %}&{{ k }}={{ v }}{% endif %}{% endfor %}"
+     class="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors text-sm">
+    ← Anterior
+  </a>
+  {% endif %}
+  <span class="px-4 py-2 text-gray-500 text-sm">
+    Pág. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+  </span>
+  {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}{% for k,v in current_filters.items %}{% if v %}&{{ k }}={{ v }}{% endif %}{% endfor %}"
+     class="px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors text-sm">
+    Siguiente →
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="text-center py-20">
+  <p class="text-gray-500 text-lg">No hay proyectos con esos filtros.</p>
+  <a href="/projects/" class="mt-4 inline-block text-purple-400 hover:text-purple-300 text-sm">Ver todos los proyectos →</a>
+</div>
+{% endif %}

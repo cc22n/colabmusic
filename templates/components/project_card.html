@@ -1,0 +1,51 @@
+{% comment %}
+Tarjeta reutilizable de proyecto.
+Contexto esperado: project
+{% endcomment %}
+<article class="bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-purple-700 transition-colors flex flex-col gap-3">
+
+  <div class="flex items-start justify-between gap-2">
+    <div class="flex-1 min-w-0">
+      <a href="{{ project.get_absolute_url }}" class="text-white font-semibold text-lg hover:text-purple-300 transition-colors line-clamp-2">
+        {{ project.title }}
+      </a>
+      {% if project.genre %}
+      <span class="text-xs text-gray-500">{{ project.genre.name }}</span>
+      {% endif %}
+    </div>
+    <span class="shrink-0 text-xs px-2 py-1 rounded-full font-medium
+      {% if project.project_type == 'cover' %}bg-blue-900 text-blue-300
+      {% else %}bg-purple-900 text-purple-300{% endif %}">
+      {{ project.get_project_type_display }}
+    </span>
+  </div>
+
+  {% if project.description %}
+  <p class="text-gray-400 text-sm line-clamp-2">{{ project.description }}</p>
+  {% endif %}
+
+  {% if project.tags.all %}
+  <div class="flex flex-wrap gap-1">
+    {% for tag in project.tags.all %}
+    <span class="text-xs px-2 py-0.5 bg-gray-800 text-gray-400 rounded-full">#{{ tag.name }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="flex items-center justify-between mt-auto pt-2 border-t border-gray-800">
+    <div class="flex items-center gap-2">
+      <span class="text-xs px-2 py-1 rounded-full font-medium
+        {% if project.status == 'seeking_lyrics' %}bg-yellow-900 text-yellow-300
+        {% elif project.status == 'seeking_beat' %}bg-orange-900 text-orange-300
+        {% elif project.status == 'seeking_vocals' %}bg-pink-900 text-pink-300
+        {% elif project.status == 'in_review' %}bg-blue-900 text-blue-300
+        {% elif project.status == 'complete' %}bg-green-900 text-green-300
+        {% else %}bg-gray-800 text-gray-500{% endif %}">
+        {{ project.get_status_display }}
+      </span>
+    </div>
+    <span class="text-xs text-gray-600">
+      por <a href="/accounts/profile/{{ project.created_by.username }}/" class="text-gray-400 hover:text-white">{{ project.created_by.username }}</a>
+    </span>
+  </div>
+</article>

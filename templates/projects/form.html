@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} — ColabMusic{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-white">{{ page_title }}</h1>
+    <p class="text-gray-400 text-sm mt-1">
+      {% if action == "Crear proyecto" %}
+        Empieza una nueva colaboración musical.
+      {% else %}
+        Modifica los detalles de tu proyecto.
+      {% endif %}
+    </p>
+  </div>
+
+  <form method="post" class="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col gap-5">
+    {% csrf_token %}
+
+    <!-- Non-field errors -->
+    {% if form.non_field_errors %}
+    <div class="bg-red-900/40 border border-red-700 rounded-lg p-3">
+      {% for error in form.non_field_errors %}
+      <p class="text-red-300 text-sm">{{ error }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Title -->
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-300" for="{{ form.title.id_for_label }}">
+        Título <span class="text-red-400">*</span>
+      </label>
+      {{ form.title }}
+      {% if form.title.errors %}
+      <p class="text-red-400 text-xs">{{ form.title.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Description -->
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-300" for="{{ form.description.id_for_label }}">
+        Descripción
+      </label>
+      {{ form.description }}
+      {% if form.description.errors %}
+      <p class="text-red-400 text-xs">{{ form.description.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Type + Genre in 2 cols -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-gray-300" for="{{ form.project_type.id_for_label }}">
+          Tipo <span class="text-red-400">*</span>
+        </label>
+        {{ form.project_type }}
+        {% if form.project_type.errors %}
+        <p class="text-red-400 text-xs">{{ form.project_type.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-gray-300" for="{{ form.genre.id_for_label }}">
+          Género
+        </label>
+        {{ form.genre }}
+        {% if form.genre.errors %}
+        <p class="text-red-400 text-xs">{{ form.genre.errors.0 }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-300" for="id_tags">
+        Etiquetas
+      </label>
+      {{ form.tags }}
+      <p class="text-xs text-gray-500">{{ form.tags.help_text }}</p>
+    </div>
+
+    <!-- Checkboxes -->
+    <div class="flex flex-col gap-3">
+      <label class="flex items-center gap-3 cursor-pointer">
+        {{ form.is_public }}
+        <div>
+          <span class="text-sm font-medium text-gray-300">Proyecto público</span>
+          <p class="text-xs text-gray-500">Visible para todos los usuarios</p>
+        </div>
+      </label>
+      <label class="flex items-center gap-3 cursor-pointer">
+        {{ form.allow_multiple_versions }}
+        <div>
+          <span class="text-sm font-medium text-gray-300">Permitir múltiples versiones</span>
+          <p class="text-xs text-gray-500">Varios colaboradores pueden enviar contribuciones</p>
+        </div>
+      </label>
+    </div>
+
+    <!-- Submit -->
+    <div class="flex items-center justify-between pt-2 border-t border-gray-800">
+      <a href="{% url 'projects:list' %}" class="text-gray-400 hover:text-white text-sm transition-colors">
+        Cancelar
+      </a>
+      <button type="submit"
+              class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">
+        {{ action }}
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}

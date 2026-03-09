@@ -1,0 +1,53 @@
+{% comment %}Partial HTMX: formulario de envío de letra{% endcomment %}
+<form hx-post="{% url 'projects:submit-lyrics' slug=project.slug %}"
+      hx-target="#lyrics-list"
+      hx-swap="afterbegin"
+      class="bg-gray-800 rounded-lg p-4 flex flex-col gap-3 border border-gray-700">
+  {% csrf_token %}
+
+  {% if lyrics_form.non_field_errors %}
+  <div class="bg-red-900/40 border border-red-700 rounded p-2">
+    {% for error in lyrics_form.non_field_errors %}
+    <p class="text-red-300 text-xs">{{ error }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="flex flex-col gap-1">
+    <label class="text-xs font-medium text-gray-400">Letra <span class="text-red-400">*</span></label>
+    {{ lyrics_form.content }}
+    {% if lyrics_form.content.errors %}
+    <p class="text-red-400 text-xs">{{ lyrics_form.content.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  <div class="flex flex-col gap-1">
+    <label class="text-xs font-medium text-gray-400">Idioma</label>
+    {{ lyrics_form.language }}
+  </div>
+
+  {% if project.project_type == 'cover' %}
+  <div class="grid grid-cols-2 gap-3">
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-400">Artista original</label>
+      {{ lyrics_form.original_artist }}
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-400">Canción original</label>
+      {{ lyrics_form.original_song }}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="flex justify-end gap-2 pt-2 border-t border-gray-700">
+    <button type="button"
+            onclick="this.closest('[x-data]').__x.$data.open = false"
+            class="text-gray-400 hover:text-white text-sm transition-colors">
+      Cancelar
+    </button>
+    <button type="submit"
+            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+      Enviar letra
+    </button>
+  </div>
+</form>

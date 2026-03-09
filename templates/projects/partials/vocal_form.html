@@ -1,0 +1,47 @@
+{% comment %}Partial HTMX: formulario de subida de vocal{% endcomment %}
+<form hx-post="{% url 'projects:submit-vocal' slug=project.slug %}"
+      hx-target="#vocals-list"
+      hx-swap="afterbegin"
+      hx-encoding="multipart/form-data"
+      class="bg-gray-800 rounded-lg p-4 flex flex-col gap-3 border border-gray-700">
+  {% csrf_token %}
+
+  {% if vocal_form.non_field_errors %}
+  <div class="bg-red-900/40 border border-red-700 rounded p-2">
+    {% for error in vocal_form.non_field_errors %}
+    <p class="text-red-300 text-xs">{{ error }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="flex flex-col gap-1">
+    <label class="text-xs font-medium text-gray-400">Archivo de audio <span class="text-red-400">*</span></label>
+    {{ vocal_form.original_file }}
+    <p class="text-xs text-gray-500">{{ vocal_form.original_file.help_text }}</p>
+    {% if vocal_form.original_file.errors %}
+    <p class="text-red-400 text-xs">{{ vocal_form.original_file.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  <div class="flex flex-col gap-1">
+    <label class="text-xs font-medium text-gray-400">Versión #</label>
+    {{ vocal_form.version_number }}
+  </div>
+
+  <div class="flex flex-col gap-1">
+    <label class="text-xs font-medium text-gray-400">Notas</label>
+    {{ vocal_form.description }}
+  </div>
+
+  <div class="flex justify-end gap-2 pt-2 border-t border-gray-700">
+    <button type="button"
+            onclick="this.closest('[x-data]').__x.$data.open = false"
+            class="text-gray-400 hover:text-white text-sm transition-colors">
+      Cancelar
+    </button>
+    <button type="submit"
+            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+      Subir vocal
+    </button>
+  </div>
+</form>

@@ -1,0 +1,56 @@
+{% comment %}Partial HTMX: formulario de subida de beat{% endcomment %}
+<form hx-post="{% url 'projects:submit-beat' slug=project.slug %}"
+      hx-target="#beats-list"
+      hx-swap="afterbegin"
+      hx-encoding="multipart/form-data"
+      class="bg-gray-800 rounded-lg p-4 flex flex-col gap-3 border border-gray-700">
+  {% csrf_token %}
+
+  {% if beat_form.non_field_errors %}
+  <div class="bg-red-900/40 border border-red-700 rounded p-2">
+    {% for error in beat_form.non_field_errors %}
+    <p class="text-red-300 text-xs">{{ error }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="flex flex-col gap-1">
+    <label class="text-xs font-medium text-gray-400">Archivo de audio <span class="text-red-400">*</span></label>
+    {{ beat_form.original_file }}
+    <p class="text-xs text-gray-500">{{ beat_form.original_file.help_text }}</p>
+    {% if beat_form.original_file.errors %}
+    <p class="text-red-400 text-xs">{{ beat_form.original_file.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  <div class="grid grid-cols-2 gap-3">
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-400">BPM</label>
+      {{ beat_form.bpm }}
+      {% if beat_form.bpm.errors %}
+      <p class="text-red-400 text-xs">{{ beat_form.bpm.errors.0 }}</p>
+      {% endif %}
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-medium text-gray-400">Tonalidad</label>
+      {{ beat_form.key_signature }}
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-1">
+    <label class="text-xs font-medium text-gray-400">Descripción</label>
+    {{ beat_form.description }}
+  </div>
+
+  <div class="flex justify-end gap-2 pt-2 border-t border-gray-700">
+    <button type="button"
+            onclick="this.closest('[x-data]').__x.$data.open = false"
+            class="text-gray-400 hover:text-white text-sm transition-colors">
+      Cancelar
+    </button>
+    <button type="submit"
+            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+      Subir beat
+    </button>
+  </div>
+</form>
