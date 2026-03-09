@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es" x-data="{ mobileMenuOpen: false }">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}ColabMusic{% endblock %}</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body
+  class="bg-gray-950 text-gray-100 min-h-screen font-sans"
+  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+>
+
+  {% include "components/navbar.html" %}
+
+  <!-- Flash messages -->
+  {% if messages %}
+  <div class="fixed top-20 right-4 z-50 space-y-2" id="messages">
+    {% for message in messages %}
+    <div
+      class="px-4 py-3 rounded-lg shadow-lg text-sm font-medium
+        {% if message.tags == 'error' %}bg-red-600 text-white
+        {% elif message.tags == 'success' %}bg-green-600 text-white
+        {% elif message.tags == 'warning' %}bg-yellow-500 text-gray-900
+        {% else %}bg-blue-600 text-white{% endif %}"
+      x-data="{ show: true }"
+      x-show="show"
+      x-init="setTimeout(() => show = false, 4000)"
+      x-transition
+    >
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Main content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-800 mt-16 py-8 text-center text-gray-500 text-sm">
+    <p>ColabMusic &copy; 2024 — Música colaborativa</p>
+  </footer>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

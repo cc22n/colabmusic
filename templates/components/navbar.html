@@ -1,0 +1,64 @@
+<nav class="bg-gray-900 border-b border-gray-800 sticky top-0 z-40">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-2 text-white font-bold text-xl">
+        <span class="text-purple-400">♪</span>
+        ColabMusic
+      </a>
+
+      <!-- Desktop nav -->
+      <div class="hidden md:flex items-center gap-6">
+        <a href="/projects/" class="text-gray-300 hover:text-white transition-colors text-sm">Proyectos</a>
+        <a href="/rankings/" class="text-gray-300 hover:text-white transition-colors text-sm">Rankings</a>
+        <a href="/search/" class="text-gray-300 hover:text-white transition-colors text-sm">Buscar</a>
+
+        {% if user.is_authenticated %}
+        <a href="/projects/new/" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          + Nuevo Proyecto
+        </a>
+        <a href="/notifications/" class="text-gray-300 hover:text-white transition-colors text-sm relative">
+          Notificaciones
+        </a>
+        <a href="/accounts/profile/{{ user.username }}/" class="text-gray-300 hover:text-white transition-colors text-sm">
+          {{ user.username }}
+        </a>
+        <a href="/accounts/logout/" class="text-gray-400 hover:text-white transition-colors text-sm">Salir</a>
+        {% else %}
+        <a href="/accounts/login/" class="text-gray-300 hover:text-white transition-colors text-sm">Iniciar sesión</a>
+        <a href="/accounts/signup/" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          Registrarse
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- Mobile menu button -->
+      <button
+        @click="mobileMenuOpen = !mobileMenuOpen"
+        class="md:hidden text-gray-400 hover:text-white"
+        aria-label="Menú"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path x-show="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          <path x-show="mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile menu -->
+    <div x-show="mobileMenuOpen" x-transition class="md:hidden pb-4 space-y-2">
+      <a href="/projects/" class="block text-gray-300 hover:text-white py-2 text-sm">Proyectos</a>
+      <a href="/rankings/" class="block text-gray-300 hover:text-white py-2 text-sm">Rankings</a>
+      <a href="/search/" class="block text-gray-300 hover:text-white py-2 text-sm">Buscar</a>
+      {% if user.is_authenticated %}
+      <a href="/projects/new/" class="block text-purple-400 py-2 text-sm">+ Nuevo Proyecto</a>
+      <a href="/accounts/profile/{{ user.username }}/" class="block text-gray-300 hover:text-white py-2 text-sm">{{ user.username }}</a>
+      <a href="/accounts/logout/" class="block text-gray-400 hover:text-white py-2 text-sm">Salir</a>
+      {% else %}
+      <a href="/accounts/login/" class="block text-gray-300 hover:text-white py-2 text-sm">Iniciar sesión</a>
+      <a href="/accounts/signup/" class="block text-purple-400 py-2 text-sm font-medium">Registrarse</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>

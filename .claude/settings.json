@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(./**)",
+      "Write(apps/**)",
+      "Write(templates/**)",
+      "Write(static/**)",
+      "Write(colabmusic/**)",
+      "Write(docs/**)",
+      "Bash(python manage.py *)",
+      "Bash(pip install *)",
+      "Bash(celery *)",
+      "Bash(black *)",
+      "Bash(isort *)",
+      "Bash(flake8 *)",
+      "Bash(npx tailwindcss *)",
+      "Bash(git *)",
+      "Bash(pytest *)",
+      "Bash(ffmpeg *)",
+      "Bash(ffprobe *)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Write(.env)",
+      "Write(.env.*)",
+      "Bash(rm -rf /)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | bash)"
+    ]
+  }
+}
