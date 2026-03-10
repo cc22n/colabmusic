@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Iniciar sesión — ColabMusic{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center">
+  <div class="w-full max-w-sm">
+
+    <!-- Logo / heading -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-white mb-2">Bienvenido de vuelta</h1>
+      <p class="text-gray-400 text-sm">Inicia sesión para seguir colaborando</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+
+      <form method="POST" action="{% url 'account_login' %}" class="flex flex-col gap-4">
+        {% csrf_token %}
+        {{ form.redirect_field }}
+
+        <!-- Username field -->
+        <div class="flex flex-col gap-1">
+          <label for="{{ form.login.id_for_label }}"
+                 class="text-sm font-medium text-gray-300">
+            Nombre de usuario
+          </label>
+          <input
+            type="text"
+            name="{{ form.login.html_name }}"
+            id="{{ form.login.id_for_label }}"
+            autocomplete="username"
+            autofocus
+            placeholder="tu_usuario"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5
+                   text-white text-sm placeholder-gray-500
+                   focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500
+                   transition-colors"
+            {% if form.login.value %}value="{{ form.login.value }}"{% endif %}
+          >
+          {% if form.login.errors %}
+          <p class="text-red-400 text-xs mt-0.5">{{ form.login.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Password field -->
+        <div class="flex flex-col gap-1">
+          <div class="flex items-center justify-between">
+            <label for="{{ form.password.id_for_label }}"
+                   class="text-sm font-medium text-gray-300">
+              Contraseña
+            </label>
+            <a href="{% url 'account_reset_password' %}"
+               class="text-xs text-purple-400 hover:text-purple-300 transition-colors">
+              ¿Olvidaste tu contraseña?
+            </a>
+          </div>
+          <input
+            type="password"
+            name="{{ form.password.html_name }}"
+            id="{{ form.password.id_for_label }}"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5
+                   text-white text-sm placeholder-gray-500
+                   focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500
+                   transition-colors"
+          >
+          {% if form.password.errors %}
+          <p class="text-red-400 text-xs mt-0.5">{{ form.password.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Non-field errors -->
+        {% if form.non_field_errors %}
+        <div class="bg-red-900/30 border border-red-700/50 rounded-lg p-3">
+          {% for error in form.non_field_errors %}
+          <p class="text-red-300 text-sm">{{ error }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Remember me -->
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox"
+                 name="{{ form.remember.html_name }}"
+                 id="{{ form.remember.id_for_label }}"
+                 class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-purple-600
+                        focus:ring-purple-500 focus:ring-offset-gray-900">
+          <span class="text-sm text-gray-400">Recordarme</span>
+        </label>
+
+        <!-- Submit -->
+        <button type="submit"
+                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold
+                       py-2.5 rounded-lg transition-colors text-sm mt-1">
+          Iniciar sesión
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="relative my-5">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-800"></div>
+        </div>
+        <div class="relative flex justify-center">
+          <span class="bg-gray-900 px-3 text-xs text-gray-500">¿Nuevo en ColabMusic?</span>
+        </div>
+      </div>
+
+      <a href="{% url 'account_signup' %}"
+         class="block w-full text-center border border-gray-700 hover:border-purple-500
+                text-gray-300 hover:text-purple-300 font-medium py-2.5 rounded-lg
+                transition-colors text-sm">
+        Crear cuenta gratis
+      </a>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Crear cuenta — ColabMusic{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center py-10">
+  <div class="w-full max-w-lg">
+
+    <!-- Heading -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-white mb-2">Únete a ColabMusic</h1>
+      <p class="text-gray-400 text-sm">Crea tu cuenta y empieza a colaborar</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6"
+         x-data="{
+           selected: [],
+           toggle(role) {
+             this.selected.includes(role)
+               ? this.selected = this.selected.filter(r => r !== role)
+               : this.selected.push(role)
+           },
+           isSelected(role) { return this.selected.includes(role) }
+         }">
+
+      <form method="POST" action="{% url 'account_signup' %}" class="flex flex-col gap-5">
+        {% csrf_token %}
+
+        <!-- Non-field errors -->
+        {% if form.non_field_errors %}
+        <div class="bg-red-900/30 border border-red-700/50 rounded-lg p-3">
+          {% for error in form.non_field_errors %}
+          <p class="text-red-300 text-sm">{{ error }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Username -->
+        <div class="flex flex-col gap-1">
+          <label for="{{ form.username.id_for_label }}"
+                 class="text-sm font-medium text-gray-300">
+            Nombre de usuario <span class="text-red-400">*</span>
+          </label>
+          <input
+            type="text"
+            name="{{ form.username.html_name }}"
+            id="{{ form.username.id_for_label }}"
+            autocomplete="username"
+            autofocus
+            placeholder="tu_usuario"
+            maxlength="150"
+            class="w-full bg-gray-800 border
+                   {% if form.username.errors %}border-red-500{% else %}border-gray-700{% endif %}
+                   rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500
+                   focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500
+                   transition-colors"
+            {% if form.username.value %}value="{{ form.username.value }}"{% endif %}
+          >
+          {% if form.username.errors %}
+          <p class="text-red-400 text-xs mt-0.5">{{ form.username.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Email -->
+        <div class="flex flex-col gap-1">
+          <label for="{{ form.email.id_for_label }}"
+                 class="text-sm font-medium text-gray-300">
+            Correo electrónico <span class="text-red-400">*</span>
+          </label>
+          <input
+            type="email"
+            name="{{ form.email.html_name }}"
+            id="{{ form.email.id_for_label }}"
+            autocomplete="email"
+            placeholder="tu@correo.com"
+            class="w-full bg-gray-800 border
+                   {% if form.email.errors %}border-red-500{% else %}border-gray-700{% endif %}
+                   rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500
+                   focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500
+                   transition-colors"
+            {% if form.email.value %}value="{{ form.email.value }}"{% endif %}
+          >
+          {% if form.email.errors %}
+          <p class="text-red-400 text-xs mt-0.5">{{ form.email.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Password -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1">
+            <label for="{{ form.password1.id_for_label }}"
+                   class="text-sm font-medium text-gray-300">
+              Contraseña <span class="text-red-400">*</span>
+            </label>
+            <input
+              type="password"
+              name="{{ form.password1.html_name }}"
+              id="{{ form.password1.id_for_label }}"
+              autocomplete="new-password"
+              placeholder="••••••••"
+              class="w-full bg-gray-800 border
+                     {% if form.password1.errors %}border-red-500{% else %}border-gray-700{% endif %}
+                     rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500
+                     focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500
+                     transition-colors"
+            >
+            {% if form.password1.errors %}
+            <p class="text-red-400 text-xs mt-0.5">{{ form.password1.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label for="{{ form.password2.id_for_label }}"
+                   class="text-sm font-medium text-gray-300">
+              Confirmar <span class="text-red-400">*</span>
+            </label>
+            <input
+              type="password"
+              name="{{ form.password2.html_name }}"
+              id="{{ form.password2.id_for_label }}"
+              autocomplete="new-password"
+              placeholder="••••••••"
+              class="w-full bg-gray-800 border
+                     {% if form.password2.errors %}border-red-500{% else %}border-gray-700{% endif %}
+                     rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500
+                     focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500
+                     transition-colors"
+            >
+            {% if form.password2.errors %}
+            <p class="text-red-400 text-xs mt-0.5">{{ form.password2.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Role selector (optional) -->
+        <div class="flex flex-col gap-2">
+          <div>
+            <p class="text-sm font-medium text-gray-300">¿Cuál es tu rol? <span class="text-gray-500 font-normal">(opcional)</span></p>
+            <p class="text-xs text-gray-500 mt-0.5">Puedes elegir varios. Siempre lo puedes cambiar después.</p>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+
+            <!-- Letrista -->
+            <button type="button"
+                    @click="toggle('lyricist')"
+                    :class="isSelected('lyricist')
+                      ? 'border-purple-500 bg-purple-900/30 text-white'
+                      : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-500 hover:text-gray-200'"
+                    class="flex flex-col items-center gap-2 p-4 rounded-xl border
+                           cursor-pointer transition-all duration-150 select-none">
+              <span class="text-2xl">✍️</span>
+              <span class="text-xs font-medium">Letrista</span>
+              <!-- Check indicator -->
+              <span x-show="isSelected('lyricist')"
+                    class="text-purple-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+              </span>
+            </button>
+
+            <!-- Productor -->
+            <button type="button"
+                    @click="toggle('producer')"
+                    :class="isSelected('producer')
+                      ? 'border-purple-500 bg-purple-900/30 text-white'
+                      : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-500 hover:text-gray-200'"
+                    class="flex flex-col items-center gap-2 p-4 rounded-xl border
+                           cursor-pointer transition-all duration-150 select-none">
+              <span class="text-2xl">🎹</span>
+              <span class="text-xs font-medium">Productor</span>
+              <span x-show="isSelected('producer')"
+                    class="text-purple-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+              </span>
+            </button>
+
+            <!-- Vocalista -->
+            <button type="button"
+                    @click="toggle('vocalist')"
+                    :class="isSelected('vocalist')
+                      ? 'border-purple-500 bg-purple-900/30 text-white'
+                      : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-500 hover:text-gray-200'"
+                    class="flex flex-col items-center gap-2 p-4 rounded-xl border
+                           cursor-pointer transition-all duration-150 select-none">
+              <span class="text-2xl">🎤</span>
+              <span class="text-xs font-medium">Vocalista</span>
+              <span x-show="isSelected('vocalist')"
+                    class="text-purple-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+              </span>
+            </button>
+
+          </div>
+
+          <!-- Hidden inputs — one per selected role (submitted with the form) -->
+          <template x-for="role in selected" :key="role">
+            <input type="hidden" name="roles" :value="role">
+          </template>
+
+          {% if form.roles.errors %}
+          <p class="text-red-400 text-xs">{{ form.roles.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Submit -->
+        <button type="submit"
+                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold
+                       py-2.5 rounded-lg transition-colors text-sm mt-1">
+          Crear cuenta
+        </button>
+
+      </form>
+
+      <!-- Divider -->
+      <div class="relative my-5">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-800"></div>
+        </div>
+        <div class="relative flex justify-center">
+          <span class="bg-gray-900 px-3 text-xs text-gray-500">¿Ya tienes cuenta?</span>
+        </div>
+      </div>
+
+      <a href="{% url 'account_login' %}"
+         class="block w-full text-center border border-gray-700 hover:border-purple-500
+                text-gray-300 hover:text-purple-300 font-medium py-2.5 rounded-lg
+                transition-colors text-sm">
+        Iniciar sesión
+      </a>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,6 +1,35 @@
 from django import forms
+from allauth.account.forms import SignupForm
 
 from .models import Genre, Role, UserProfile
+
+
+# ── Signup ──────────────────────────────────────────────────────────────────────
+
+
+class CustomSignupForm(SignupForm):
+    """
+    Extends allauth's SignupForm to let users choose their musical roles
+    at registration time. Roles are saved by AccountAdapter.save_user().
+    """
+
+    roles = forms.ModelMultipleChoiceField(
+        queryset=Role.objects.all(),
+        required=False,
+        # We use a hidden widget — the actual UI is rendered as clickable
+        # cards in the template using Alpine.js; this field just holds the
+        # selected values that come back as multiple hidden inputs.
+        widget=forms.MultipleHiddenInput,
+        label="Roles musicales",
+    )
+
+    def save(self, request):
+        # allauth calls save() → creates the User. Roles are set by the adapter.
+        user = super().save(request)
+        return user
+
+
+# ── Profile edit ────────────────────────────────────────────────────────────────
 
 
 class ProfileUpdateForm(forms.ModelForm):
