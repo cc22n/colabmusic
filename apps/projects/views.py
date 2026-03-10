@@ -24,6 +24,33 @@ def _is_htmx(request):
     return request.headers.get("HX-Request") == "true"
 
 
+# ── Home ───────────────────────────────────────────────────────────────────────
+
+
+def home_view(request):
+    """Homepage with recent and trending projects."""
+    recent_projects = (
+        Project.objects.filter(is_public=True)
+        .exclude(status=ProjectStatus.ARCHIVED)
+        .select_related("genre", "created_by")
+        .order_by("-created_at")[:6]
+    )
+    trending_projects = (
+        Project.objects.filter(is_public=True)
+        .exclude(status=ProjectStatus.ARCHIVED)
+        .select_related("genre", "created_by")
+        .order_by("-updated_at")[:6]
+    )
+    return render(
+        request,
+        "home.html",
+        {
+            "recent_projects": recent_projects,
+            "trending_projects": trending_projects,
+        },
+    )
+
+
 # ── Browse / List ──────────────────────────────────────────────────────────────
 
 

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile }} — ColabMusic{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+  <!-- Profile header -->
+  <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 mb-6">
+    <div class="flex items-start gap-5">
+
+      <!-- Avatar -->
+      <div class="shrink-0">
+        {% if profile.avatar %}
+        <img src="{{ profile.avatar.url }}"
+             alt="{{ profile }}"
+             class="w-20 h-20 rounded-full object-cover border-2 border-gray-700">
+        {% else %}
+        <div class="w-20 h-20 rounded-full bg-purple-900 flex items-center justify-center border-2 border-gray-700">
+          <span class="text-2xl font-bold text-purple-300">{{ profile.user.username|first|upper }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Info -->
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-3 flex-wrap">
+          <h1 class="text-2xl font-bold text-white">{{ profile }}</h1>
+          <span class="text-sm text-gray-500">@{{ profile.user.username }}</span>
+          {% if is_own_profile %}
+          <a href="{% url 'accounts:settings' %}"
+             class="ml-auto text-xs px-3 py-1 border border-gray-600 text-gray-400 hover:border-purple-500 hover:text-purple-300 rounded-lg transition-colors">
+            Editar perfil
+          </a>
+          {% endif %}
+        </div>
+
+        <!-- Roles -->
+        {% if profile.roles.all %}
+        <div class="flex gap-2 mt-2 flex-wrap">
+          {% for role in profile.roles.all %}
+          <span class="text-xs bg-purple-900/60 text-purple-300 px-2 py-0.5 rounded-full">
+            {{ role.display_name }}
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Bio -->
+        {% if profile.bio %}
+        <p class="text-gray-400 text-sm mt-3">{{ profile.bio }}</p>
+        {% endif %}
+
+        <!-- Stats -->
+        <div class="flex gap-6 mt-4 text-sm">
+          <div>
+            <span class="text-white font-semibold">{{ profile.reputation_score }}</span>
+            <span class="text-gray-500 ml-1">reputación</span>
+          </div>
+          <div>
+            <span class="text-white font-semibold">{{ created_projects_count }}</span>
+            <span class="text-gray-500 ml-1">proyectos</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Badges -->
+  {% if badges %}
+  <section class="mb-6">
+    <h2 class="text-lg font-semibold text-white mb-3">Insignias</h2>
+    <div class="flex gap-3 flex-wrap">
+      {% for ub in badges %}
+      <div class="bg-gray-800 rounded-lg px-3 py-2 border border-gray-700 flex items-center gap-2"
+           title="{{ ub.badge.description }}">
+        {% if ub.badge.icon %}
+        <span class="text-lg">{{ ub.badge.icon }}</span>
+        {% endif %}
+        <span class="text-sm text-gray-300">{{ ub.badge.name }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Genres -->
+  {% if profile.genres.all %}
+  <section class="mb-6">
+    <h2 class="text-lg font-semibold text-white mb-3">Géneros</h2>
+    <div class="flex gap-2 flex-wrap">
+      {% for genre in profile.genres.all %}
+      <a href="{{ genre.get_absolute_url }}"
+         class="text-xs bg-gray-800 text-gray-300 hover:text-purple-300 px-3 py-1 rounded-full border border-gray-700 hover:border-purple-600 transition-colors">
+        {{ genre.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Created projects -->
+  {% if created_projects %}
+  <section>
+    <h2 class="text-lg font-semibold text-white mb-3">Proyectos creados</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for project in created_projects %}
+      {% include "components/project_card.html" %}
+      {% endfor %}
+    </div>
+  </section>
+  {% else %}
+  <p class="text-gray-500 text-sm">Este usuario aún no ha creado proyectos públicos.</p>
+  {% endif %}
+
+</div>
+{% endblock %}

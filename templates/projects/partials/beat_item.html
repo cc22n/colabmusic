@@ -2,6 +2,7 @@
 Partial HTMX: un beat enviado.
 Contexto: beat, project, can_select
 {% endcomment %}
+{% load vote_tags %}
 <div class="bg-gray-800 rounded-lg p-4 border {% if beat.is_selected %}border-green-600{% else %}border-gray-700{% endif %}">
   <div class="flex items-start justify-between gap-3 mb-2">
     <div>
@@ -50,5 +51,6 @@ Contexto: beat, project, can_select
       {% elif beat.processing_status == 'failed' %}Error
       {% else %}En cola{% endif %}
     </span>
+    <span class="ml-auto">{% vote_buttons "beat" beat %}</span>
   </div>
 </div>

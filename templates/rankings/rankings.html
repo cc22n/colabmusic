@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} — ColabMusic{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+  <!-- Page header -->
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-white">{{ page_title }}</h1>
+    <div class="flex gap-2">
+      <a href="{% url 'rankings:global' %}"
+         class="text-xs px-3 py-1.5 rounded-lg transition-colors
+                {% if not is_trending %}bg-purple-700 text-white{% else %}border border-gray-600 text-gray-400 hover:text-white{% endif %}">
+        Rankings
+      </a>
+      <a href="{% url 'rankings:trending' %}"
+         class="text-xs px-3 py-1.5 rounded-lg transition-colors
+                {% if is_trending %}bg-purple-700 text-white{% else %}border border-gray-600 text-gray-400 hover:text-white{% endif %}">
+        Trending
+      </a>
+    </div>
+  </div>
+
+  {% if is_trending %}
+  {# ——— TRENDING / BY-GENRE: list of projects ——— #}
+
+    {% if genre %}
+    <p class="text-gray-500 text-sm mb-4">Proyectos en el género <strong class="text-gray-300">{{ genre.name }}</strong></p>
+    {% endif %}
+
+    {% if projects %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for project in projects %}
+      {% include "components/project_card.html" %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-500 text-sm">No hay proyectos disponibles todavía.</p>
+    {% endif %}
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="flex justify-center gap-2 mt-8">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}"
+         class="px-4 py-2 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors text-sm">
+        ← Anterior
+      </a>
+      {% endif %}
+      <span class="px-4 py-2 text-gray-500 text-sm">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </span>
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}"
+         class="px-4 py-2 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors text-sm">
+        Siguiente →
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  {% else %}
+  {# ——— GLOBAL RANKINGS: top users ——— #}
+
+    {% if profiles %}
+    <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="border-b border-gray-800">
+          <tr>
+            <th class="text-left px-4 py-3 text-gray-400 font-medium w-12">#</th>
+            <th class="text-left px-4 py-3 text-gray-400 font-medium">Usuario</th>
+            <th class="text-left px-4 py-3 text-gray-400 font-medium hidden sm:table-cell">Roles</th>
+            <th class="text-right px-4 py-3 text-gray-400 font-medium">Reputación</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for profile in profiles %}
+          {% with rank=forloop.counter0|add:page_obj.start_index %}
+          <tr class="hover:bg-gray-800/50 transition-colors">
+            <td class="px-4 py-3 text-gray-500 tabular-nums">
+              {% if forloop.counter <= 3 and page_obj.number == 1 %}
+              <span class="text-lg">{% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% else %}🥉{% endif %}</span>
+              {% else %}
+              {{ page_obj.start_index|add:forloop.counter0 }}
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <a href="{% url 'accounts:profile' username=profile.user.username %}"
+                 class="flex items-center gap-3 group">
+                {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="{{ profile }}"
+                     class="w-8 h-8 rounded-full object-cover">
+                {% else %}
+                <div class="w-8 h-8 rounded-full bg-purple-900 flex items-center justify-center shrink-0">
+                  <span class="text-xs font-bold text-purple-300">{{ profile.user.username|first|upper }}</span>
+                </div>
+                {% endif %}
+                <div>
+                  <p class="text-white font-medium group-hover:text-purple-300 transition-colors">{{ profile }}</p>
+                  <p class="text-gray-500 text-xs">@{{ profile.user.username }}</p>
+                </div>
+              </a>
+            </td>
+            <td class="px-4 py-3 hidden sm:table-cell">
+              <div class="flex gap-1 flex-wrap">
+                {% for role in profile.roles.all %}
+                <span class="text-xs bg-purple-900/40 text-purple-400 px-1.5 py-0.5 rounded">
+                  {{ role.display_name }}
+                </span>
+                {% endfor %}
+              </div>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <span class="text-purple-300 font-semibold tabular-nums">{{ profile.reputation_score }}</span>
+            </td>
+          </tr>
+          {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-gray-500 text-sm">Aún no hay usuarios con reputación.</p>
+    {% endif %}
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="flex justify-center gap-2 mt-8">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}"
+         class="px-4 py-2 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors text-sm">
+        ← Anterior
+      </a>
+      {% endif %}
+      <span class="px-4 py-2 text-gray-500 text-sm">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </span>
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}"
+         class="px-4 py-2 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800 transition-colors text-sm">
+        Siguiente →
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  {% endif %}
+
+</div>
+{% endblock %}

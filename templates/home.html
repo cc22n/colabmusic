@@ -12,7 +12,7 @@
     Letristas, productores y vocalistas colaborando para crear canciones originales y covers.
   </p>
   <div class="flex gap-4 justify-center">
-    <a href="/projects/" class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-colors">
+    <a href="{% url 'projects:list' %}" class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-colors">
       Explorar proyectos
     </a>
     {% if not user.is_authenticated %}
@@ -22,6 +22,36 @@
     {% endif %}
   </div>
 </section>
+
+<!-- Trending projects -->
+{% if trending_projects %}
+<section class="py-10">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-white">🔥 Trending ahora</h2>
+    <a href="{% url 'rankings:trending' %}" class="text-sm text-purple-400 hover:text-purple-300 transition-colors">Ver todos →</a>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for project in trending_projects %}
+    {% include "components/project_card.html" %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- Recent projects -->
+{% if recent_projects %}
+<section class="py-10">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-white">✨ Proyectos recientes</h2>
+    <a href="{% url 'projects:list' %}" class="text-sm text-purple-400 hover:text-purple-300 transition-colors">Ver todos →</a>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for project in recent_projects %}
+    {% include "components/project_card.html" %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 
 <!-- How it works -->
 <section class="py-16">
@@ -69,5 +99,15 @@
       <p class="text-gray-400 text-sm">Graba tu voz sobre los beats seleccionados. Da vida a las canciones con tu talento único.</p>
     </div>
   </div>
+</section>
+
+<!-- Rankings teaser -->
+<section class="py-16 text-center">
+  <h2 class="text-3xl font-bold text-white mb-4">🏆 Rankings</h2>
+  <p class="text-gray-400 mb-6">Descubre los colaboradores más activos y respetados de la plataforma.</p>
+  <a href="{% url 'rankings:global' %}"
+     class="inline-block bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+    Ver rankings →
+  </a>
 </section>
 {% endblock %}

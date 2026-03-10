@@ -1,8 +1,9 @@
-"""Home URL — serves the homepage from the projects app."""
+"""Home URL — serves the homepage with dynamic context."""
 
 from django.urls import path
-from django.views.generic import TemplateView
+
+from . import views
 
 urlpatterns = [
-    path("", TemplateView.as_view(template_name="home.html"), name="home"),
+    path("", views.home_view, name="home"),
 ]
