@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.utils.text import slugify
 
 from apps.accounts.models import Genre
+from apps.moderation.models import ContentModerationMixin, VisibleManager
 
 User = get_user_model()
 
@@ -202,7 +203,9 @@ class Tag(models.Model):
         super().save(*args, **kwargs)
 
 
-class Lyrics(models.Model):
+class Lyrics(ContentModerationMixin, models.Model):
+    objects = models.Manager()
+    visible = VisibleManager()
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE,
@@ -247,7 +250,10 @@ class Lyrics(models.Model):
         return reverse("projects:detail", kwargs={"slug": self.project.slug})
 
 
-class Beat(AudioMixin, models.Model):
+class Beat(ContentModerationMixin, AudioMixin, models.Model):
+    objects = models.Manager()
+    visible = VisibleManager()
+
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE,
@@ -286,7 +292,10 @@ class Beat(AudioMixin, models.Model):
         return reverse("projects:detail", kwargs={"slug": self.project.slug})
 
 
-class VocalTrack(AudioMixin, models.Model):
+class VocalTrack(ContentModerationMixin, AudioMixin, models.Model):
+    objects = models.Manager()
+    visible = VisibleManager()
+
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE,
@@ -318,7 +327,10 @@ class VocalTrack(AudioMixin, models.Model):
         return reverse("projects:detail", kwargs={"slug": self.project.slug})
 
 
-class FinalMix(AudioMixin, models.Model):
+class FinalMix(ContentModerationMixin, AudioMixin, models.Model):
+    objects = models.Manager()
+    visible = VisibleManager()
+
     project = models.OneToOneField(
         Project,
         on_delete=models.CASCADE,

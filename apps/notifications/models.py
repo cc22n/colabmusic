@@ -17,6 +17,7 @@ class NotificationType(models.TextChoices):
     BADGE_AWARDED = "badge_awarded", "Insignia Obtenida"
     TOP_RANKING = "top_ranking", "Top en Rankings"
     MENTION = "mention", "Mención"
+    MODERATION_FLAG = "moderation_flag", "Contenido Reportado"
 
 
 class Notification(models.Model):

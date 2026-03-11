@@ -45,5 +45,8 @@ Contexto: vocal, project, can_select
       {% elif vocal.processing_status == 'failed' %}Error
       {% else %}En cola{% endif %}
     </span>
+    <span class="ml-auto">
+      {% include "components/flag_button.html" with content_type_str="vocal" object_id=vocal.pk %}
+    </span>
   </div>
 </div>

@@ -49,6 +49,7 @@ LOCAL_APPS = [
     "apps.rankings",
     "apps.search",
     "apps.notifications",
+    "apps.moderation",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -187,3 +188,7 @@ EMAIL_BACKEND = env(
 
 # Rate limiting (django-ratelimit)
 RATELIMIT_USE_CACHE = "default"
+
+# Moderation
+MODERATION_AUTO_HIDE_THRESHOLD = 3   # Flags needed to auto-hide content
+MODERATION_NOTIFY_THRESHOLD = 1      # Flags needed to notify admins

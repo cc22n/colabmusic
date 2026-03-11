@@ -51,6 +51,9 @@ Contexto: beat, project, can_select
       {% elif beat.processing_status == 'failed' %}Error
       {% else %}En cola{% endif %}
     </span>
-    <span class="ml-auto">{% vote_buttons "beat" beat %}</span>
+    <span class="ml-auto flex items-center gap-3">
+      {% vote_buttons "beat" beat %}
+      {% include "components/flag_button.html" with content_type_str="beat" object_id=beat.pk %}
+    </span>
   </div>
 </div>

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Cola de Moderación — ColabMusic{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Cola de Moderación</h1>
+      <p class="text-gray-400 text-sm mt-0.5">Solo visible para el equipo staff</p>
+    </div>
+    <span class="bg-red-900/50 border border-red-700 text-red-300 text-xs px-3 py-1 rounded-full font-medium">
+      {{ flags|length }} reporte{{ flags|length|pluralize:"s" }}
+    </span>
+  </div>
+
+  <!-- Status filter -->
+  <div class="flex gap-2 mb-6">
+    {% for val, label in status_choices %}
+    <a href="?status={{ val }}"
+       class="text-xs px-3 py-1.5 rounded-lg transition-colors border
+              {% if status_filter == val %}bg-purple-700 border-purple-600 text-white{% else %}border-gray-700 text-gray-400 hover:text-white{% endif %}">
+      {{ label }}
+    </a>
+    {% endfor %}
+    <a href="?status="
+       class="text-xs px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 hover:text-white transition-colors">
+      Todos pendientes
+    </a>
+  </div>
+
+  {% if flags %}
+  <div class="flex flex-col gap-4">
+    {% for flag in flags %}
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-5"
+         id="flag-row-{{ flag.pk }}">
+
+      <div class="flex items-start gap-4">
+        <!-- Left: flag info -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap mb-1">
+            <span class="text-xs bg-red-900/40 text-red-400 border border-red-800/50 px-2 py-0.5 rounded">
+              {{ flag.get_reason_display }}
+            </span>
+            <span class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded">
+              {{ flag.content_type.model }} #{{ flag.object_id }}
+            </span>
+            <span class="text-xs text-gray-500">
+              por <strong class="text-gray-300">{{ flag.reporter.username }}</strong>
+              — {{ flag.created_at|date:"d M Y H:i" }}
+            </span>
+          </div>
+
+          {% if flag.description %}
+          <p class="text-gray-400 text-sm mt-2 bg-gray-800/50 rounded-lg px-3 py-2">
+            "{{ flag.description }}"
+          </p>
+          {% endif %}
+
+          <!-- Status badge -->
+          <div class="mt-2">
+            <span class="text-xs px-2 py-0.5 rounded
+              {% if flag.status == 'pending' %}bg-yellow-900/40 text-yellow-400
+              {% elif flag.status == 'reviewing' %}bg-blue-900/40 text-blue-400
+              {% elif flag.status == 'upheld' %}bg-red-900/40 text-red-400
+              {% else %}bg-green-900/40 text-green-400{% endif %}">
+              {{ flag.get_status_display }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Right: resolve form -->
+        <div class="shrink-0 w-56" x-data="{ open: false }">
+          <button @click="open = !open"
+                  class="text-xs px-3 py-1.5 border border-gray-700 text-gray-400
+                         hover:border-purple-500 hover:text-purple-300 rounded-lg transition-colors">
+            Tomar acción ▾
+          </button>
+
+          <div x-show="open" x-transition class="mt-2">
+            <form
+              hx-post="{% url 'moderation:resolve-flag' flag_id=flag.pk %}"
+              hx-target="#flag-row-{{ flag.pk }}"
+              hx-swap="outerHTML"
+              class="bg-gray-800 rounded-lg p-3 border border-gray-700 flex flex-col gap-2">
+              {% csrf_token %}
+
+              <select name="action_type"
+                      class="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5
+                             text-white text-xs focus:outline-none focus:border-purple-500">
+                {% for val, label in resolve_form.action_type.field.choices %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+
+              <textarea name="notes" rows="2" maxlength="1000"
+                        placeholder="Notas internas (opcional)..."
+                        class="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5
+                               text-white text-xs placeholder-gray-500
+                               focus:outline-none focus:border-purple-500 resize-none">
+              </textarea>
+
+              <button type="submit"
+                      class="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs
+                             py-1.5 rounded transition-colors font-medium">
+                Confirmar
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="text-center py-20">
+    <div class="text-4xl mb-4">✅</div>
+    <p class="text-gray-400">No hay reportes pendientes.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Modal container for flag forms (referenced by flag_button component) -->
+<div id="flag-modal"></div>
+{% endblock %}

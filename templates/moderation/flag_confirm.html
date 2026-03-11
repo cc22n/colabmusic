@@ -1,0 +1,11 @@
+{% comment %}
+HTMX partial: replaces the flag button after submission.
+Context: already_flagged (bool), content_type_str, object_id
+{% endcomment %}
+<div id="flag-{{ content_type_str }}-{{ object_id }}"
+     class="inline-flex items-center gap-1 text-xs text-red-400">
+  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M3 21v-4m0 0V5a2 2 0 012-2h6.5L13 5h6a2 2 0 012 2v7a2 2 0 01-2 2h-6.5L11 12H5a2 2 0 00-2 2z"/>
+  </svg>
+  {% if already_flagged %}Ya reportado{% else %}Reportado{% endif %}
+</div>

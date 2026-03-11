@@ -35,5 +35,8 @@ Contexto: lyrics, project, can_select
     {% if lyrics.original_artist %}
     <span class="text-xs text-gray-500 ml-auto">Cover de: {{ lyrics.original_artist }} — {{ lyrics.original_song }}</span>
     {% endif %}
+    <span class="ml-auto">
+      {% include "components/flag_button.html" with content_type_str="lyrics" object_id=lyrics.pk %}
+    </span>
   </div>
 </div>

@@ -124,9 +124,18 @@ class ProjectDetailView(DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         project = self.object
-        ctx["lyrics_list"] = project.lyrics.select_related("author").order_by("-created_at")
-        ctx["beats_list"] = project.beats.select_related("producer").order_by("-created_at")
-        ctx["vocal_tracks_list"] = project.vocal_tracks.select_related("vocalist").order_by("-created_at")
+        # Filter hidden (moderation) content from public view; staff sees everything
+        is_staff = self.request.user.is_authenticated and self.request.user.is_staff
+        lyrics_qs = project.lyrics.select_related("author").order_by("-created_at")
+        beats_qs = project.beats.select_related("producer").order_by("-created_at")
+        vocals_qs = project.vocal_tracks.select_related("vocalist").order_by("-created_at")
+        if not is_staff:
+            lyrics_qs = lyrics_qs.filter(is_hidden=False)
+            beats_qs = beats_qs.filter(is_hidden=False)
+            vocals_qs = vocals_qs.filter(is_hidden=False)
+        ctx["lyrics_list"] = lyrics_qs
+        ctx["beats_list"] = beats_qs
+        ctx["vocal_tracks_list"] = vocals_qs
         ctx["can_edit"] = (
             self.request.user.is_authenticated
             and self.request.user == project.created_by
