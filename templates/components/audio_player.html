@@ -1,0 +1,90 @@
+{% comment %}
+Componente reutilizable de audio player con Wavesurfer.js.
+
+Parámetros de contexto:
+  audio_object  — instancia de Beat, VocalTrack o FinalMix
+  model_name    — "beat" | "vocaltrack" | "finalmix"
+  track_id      — identificador único para los divs (p.ej. "beat-42")
+
+Comportamiento:
+  - Si processing_status == 'ready': muestra el player con Wavesurfer.js
+  - Si processing_status == 'pending'|'processing': muestra spinner + HTMX polling
+  - Si processing_status == 'failed': muestra error con enlace al original
+{% endcomment %}
+
+{% if audio_object.processing_status == 'ready' %}
+<div class="mt-3 audio-player" id="player-{{ track_id }}">
+  <div id="waveform-{{ track_id }}"
+       class="rounded overflow-hidden bg-gray-900 border border-gray-700"
+       style="height:60px;"></div>
+  <div class="flex items-center gap-3 mt-2">
+    <button
+      onclick="window._wsPlayers&&window._wsPlayers['{{ track_id }}']&&window._wsPlayers['{{ track_id }}'].playPause()"
+      class="w-8 h-8 flex items-center justify-center rounded-full bg-purple-600 hover:bg-purple-500 text-white text-xs transition-colors"
+      title="Reproducir / Pausar">
+      &#9654;
+    </button>
+    <span id="time-{{ track_id }}" class="text-xs text-gray-400 tabular-nums">0:00 / 0:00</span>
+  </div>
+</div>
+<script>
+(function() {
+  if (!window.WaveSurfer) return;
+  window._wsPlayers = window._wsPlayers || {};
+  fetch('/api/waveform/{{ model_name }}/{{ audio_object.pk }}/')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var url = data.streaming_url;
+      if (!url) return;
+      var ws = WaveSurfer.create({
+        container: '#waveform-{{ track_id }}',
+        waveColor: '#7C3AED',
+        progressColor: '#4C1D95',
+        cursorColor: '#A78BFA',
+        barWidth: 2,
+        barRadius: 2,
+        height: 60,
+        normalize: true,
+        backend: 'MediaElement',
+        mediaControls: false,
+      });
+      ws.load(url, data.peaks || []);
+      window._wsPlayers['{{ track_id }}'] = ws;
+      ws.on('audioprocess', function() {
+        var el = document.getElementById('time-{{ track_id }}');
+        if (!el) return;
+        el.textContent = _fmt(ws.getCurrentTime()) + ' / ' + _fmt(ws.getDuration());
+      });
+      function _fmt(s) {
+        var m = Math.floor(s / 60), sec = Math.floor(s % 60);
+        return m + ':' + (sec < 10 ? '0' : '') + sec;
+      }
+    })
+    .catch(function(e) { console.warn('WaveSurfer load error', e); });
+})();
+</script>
+
+{% elif audio_object.processing_status == 'failed' %}
+<div class="mt-2 text-xs text-red-400">
+  ⚠ Error al procesar el audio.
+  {% if audio_object.original_file %}
+  <a href="{{ audio_object.original_file.url }}"
+     class="underline hover:text-red-300 ml-1" target="_blank">
+    Descargar original
+  </a>
+  {% endif %}
+</div>
+
+{% else %}
+{# pending or processing — HTMX polling every 3 seconds #}
+<div hx-get="/api/audio/status/{{ model_name }}/{{ audio_object.pk }}/"
+     hx-trigger="every 3s"
+     hx-swap="outerHTML"
+     class="text-xs text-yellow-400 animate-pulse mt-2">
+  {% if audio_object.processing_status == 'processing' %}
+    Procesando audio...
+  {% else %}
+    En cola...
+  {% endif %}
+</div>
+{% endif %}

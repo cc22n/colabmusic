@@ -39,18 +39,13 @@ Contexto: beat, project, can_select
   <p class="text-gray-400 text-sm">{{ beat.description }}</p>
   {% endif %}
 
-  <div class="flex items-center gap-3 mt-2">
+  <!-- Audio player -->
+  {% include "components/audio_player.html" with audio_object=beat model_name="beat" track_id="beat-"|add:beat.pk|stringformat:"s" %}
+
+  <div class="flex items-center gap-3 mt-3">
+    {% if beat.audio_format %}
     <span class="text-xs text-gray-600">{{ beat.audio_format|upper }}</span>
-    <span class="text-xs px-2 py-0.5 rounded-full
-      {% if beat.processing_status == 'ready' %}bg-green-900 text-green-400
-      {% elif beat.processing_status == 'processing' %}bg-yellow-900 text-yellow-400
-      {% elif beat.processing_status == 'failed' %}bg-red-900 text-red-400
-      {% else %}bg-gray-700 text-gray-500{% endif %}">
-      {% if beat.processing_status == 'ready' %}Listo
-      {% elif beat.processing_status == 'processing' %}Procesando...
-      {% elif beat.processing_status == 'failed' %}Error
-      {% else %}En cola{% endif %}
-    </span>
+    {% endif %}
     <span class="ml-auto flex items-center gap-3">
       {% vote_buttons "beat" beat %}
       {% include "components/flag_button.html" with content_type_str="beat" object_id=beat.pk %}

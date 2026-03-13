@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from .models import Beat, FinalMix, Lyrics, Project, Tag, VocalTrack
 
 ALLOWED_AUDIO_EXTENSIONS = {".mp3", ".wav", ".flac", ".aac", ".ogg", ".m4a"}
+MAX_AUDIO_SIZE_MB = 50
+MAX_AUDIO_SIZE_BYTES = MAX_AUDIO_SIZE_MB * 1024 * 1024
 
 
 def validate_audio_extension(file):
@@ -15,6 +17,15 @@ def validate_audio_extension(file):
         raise ValidationError(
             f"Formato no permitido '{ext}'. "
             f"Usa: {', '.join(sorted(ALLOWED_AUDIO_EXTENSIONS))}"
+        )
+
+
+def validate_audio_file_size(file):
+    """Validate that the uploaded audio file does not exceed MAX_AUDIO_SIZE_MB."""
+    if file.size > MAX_AUDIO_SIZE_BYTES:
+        raise ValidationError(
+            f"El archivo es demasiado grande ({file.size // (1024 * 1024)} MB). "
+            f"El límite es {MAX_AUDIO_SIZE_MB} MB."
         )
 
 
@@ -140,7 +151,7 @@ class LyricsForm(forms.ModelForm):
 
 class BeatSubmitForm(forms.ModelForm):
     original_file = forms.FileField(
-        validators=[validate_audio_extension],
+        validators=[validate_audio_extension, validate_audio_file_size],
         widget=forms.FileInput(
             attrs={
                 "class": "block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700",
@@ -186,7 +197,7 @@ class BeatSubmitForm(forms.ModelForm):
 
 class VocalSubmitForm(forms.ModelForm):
     original_file = forms.FileField(
-        validators=[validate_audio_extension],
+        validators=[validate_audio_extension, validate_audio_file_size],
         widget=forms.FileInput(
             attrs={
                 "class": "block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700",

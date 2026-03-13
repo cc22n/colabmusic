@@ -1,12 +1,16 @@
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
+from django.core.cache import cache
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.accounts.models import Genre
+from apps.audio.utils import validate_mime_type
 
 from .forms import BeatSubmitForm, LyricsForm, ProjectForm, VocalSubmitForm
 from .models import (
@@ -19,9 +23,47 @@ from .models import (
     VocalTrack,
 )
 
+logger = logging.getLogger(__name__)
+
+UPLOAD_RATE_LIMIT = 10  # max uploads per hour per user
+
 
 def _is_htmx(request):
     return request.headers.get("HX-Request") == "true"
+
+
+def _check_upload_rate_limit(user_id: int) -> bool:
+    """Return True if the user is within the upload rate limit (10/hour)."""
+    key = f"upload_rate:{user_id}"
+    count = cache.get(key, 0)
+    return count < UPLOAD_RATE_LIMIT
+
+
+def _increment_upload_count(user_id: int) -> None:
+    """Increment the per-user upload counter (expires in 1 hour)."""
+    key = f"upload_rate:{user_id}"
+    try:
+        cache.incr(key)
+    except ValueError:
+        cache.set(key, 1, timeout=3600)
+
+
+def _validate_audio_mime(request, form, file_key="original_file"):
+    """
+    Validate MIME type of an uploaded file using python-magic.
+    Adds a form error and returns False if invalid.
+    Returns True if valid or if python-magic is unavailable.
+    """
+    uploaded = request.FILES.get(file_key)
+    if not uploaded:
+        return True
+    try:
+        validate_mime_type(uploaded)
+        uploaded.seek(0)
+        return True
+    except ValidationError as exc:
+        form.add_error(file_key, exc)
+        return False
 
 
 # ── Home ───────────────────────────────────────────────────────────────────────
@@ -247,6 +289,19 @@ def submit_lyrics(request, slug):
     return redirect("projects:detail", slug=slug)
 
 
+def _rate_limit_error(request, form_template, form_context):
+    """Return a rate-limit error response for upload views."""
+    error_msg = (
+        '<p class="text-red-400 text-sm">'
+        "Demasiadas subidas. Límite: 10 por hora."
+        "</p>"
+    )
+    if _is_htmx(request):
+        return HttpResponse(error_msg, status=429)
+    messages.error(request, "Demasiadas subidas. Límite: 10 archivos por hora.")
+    return render(request, form_template, form_context, status=429)
+
+
 @login_required
 def submit_beat(request, slug):
     project = get_object_or_404(Project, slug=slug, is_public=True)
@@ -261,22 +316,50 @@ def submit_beat(request, slug):
         return redirect("projects:detail", slug=slug)
 
     if request.method == "POST":
+        # Rate limit check
+        if not _check_upload_rate_limit(request.user.id):
+            return _rate_limit_error(
+                request,
+                "projects/partials/beat_form.html",
+                {"beat_form": BeatSubmitForm(), "project": project},
+            )
+
         form = BeatSubmitForm(request.POST, request.FILES)
         if form.is_valid():
-            beat = form.save(commit=False)
-            beat.project = project
-            beat.producer = request.user
-            beat.audio_format = request.FILES["original_file"].name.rsplit(".", 1)[-1].lower()
-            beat.file_size = request.FILES["original_file"].size
-            beat.save()
-            if _is_htmx(request):
-                return render(
-                    request,
-                    "projects/partials/beat_item.html",
-                    {"beat": beat, "project": project, "can_select": False},
-                )
-            messages.success(request, "Beat enviado. Se está procesando.")
-            return redirect("projects:detail", slug=slug)
+            # MIME type validation (real check, not just extension)
+            if not _validate_audio_mime(request, form):
+                if _is_htmx(request):
+                    return render(
+                        request,
+                        "projects/partials/beat_form.html",
+                        {"beat_form": form, "project": project},
+                        status=422,
+                    )
+            else:
+                beat = form.save(commit=False)
+                beat.project = project
+                beat.producer = request.user
+                beat.audio_format = request.FILES["original_file"].name.rsplit(".", 1)[-1].lower()
+                beat.file_size = request.FILES["original_file"].size
+                beat.save()
+
+                # Dispatch async processing
+                _increment_upload_count(request.user.id)
+                try:
+                    from apps.audio.tasks import process_audio
+                    process_audio.delay("beat", beat.pk)
+                    logger.info("Dispatched process_audio for Beat #%s", beat.pk)
+                except Exception as exc:
+                    logger.error("Failed to dispatch process_audio for Beat #%s: %s", beat.pk, exc)
+
+                if _is_htmx(request):
+                    return render(
+                        request,
+                        "projects/partials/beat_item.html",
+                        {"beat": beat, "project": project, "can_select": False},
+                    )
+                messages.success(request, "Beat enviado. Se está procesando.")
+                return redirect("projects:detail", slug=slug)
         if _is_htmx(request):
             return render(
                 request,
@@ -308,22 +391,52 @@ def submit_vocal(request, slug):
         return redirect("projects:detail", slug=slug)
 
     if request.method == "POST":
+        # Rate limit check
+        if not _check_upload_rate_limit(request.user.id):
+            return _rate_limit_error(
+                request,
+                "projects/partials/vocal_form.html",
+                {"vocal_form": VocalSubmitForm(), "project": project},
+            )
+
         form = VocalSubmitForm(request.POST, request.FILES)
         if form.is_valid():
-            vocal = form.save(commit=False)
-            vocal.project = project
-            vocal.vocalist = request.user
-            vocal.audio_format = request.FILES["original_file"].name.rsplit(".", 1)[-1].lower()
-            vocal.file_size = request.FILES["original_file"].size
-            vocal.save()
-            if _is_htmx(request):
-                return render(
-                    request,
-                    "projects/partials/vocal_item.html",
-                    {"vocal": vocal, "project": project, "can_select": False},
-                )
-            messages.success(request, "Vocal enviado. Se está procesando.")
-            return redirect("projects:detail", slug=slug)
+            # MIME type validation
+            if not _validate_audio_mime(request, form):
+                if _is_htmx(request):
+                    return render(
+                        request,
+                        "projects/partials/vocal_form.html",
+                        {"vocal_form": form, "project": project},
+                        status=422,
+                    )
+            else:
+                vocal = form.save(commit=False)
+                vocal.project = project
+                vocal.vocalist = request.user
+                vocal.audio_format = request.FILES["original_file"].name.rsplit(".", 1)[-1].lower()
+                vocal.file_size = request.FILES["original_file"].size
+                vocal.save()
+
+                # Dispatch async processing
+                _increment_upload_count(request.user.id)
+                try:
+                    from apps.audio.tasks import process_audio
+                    process_audio.delay("vocaltrack", vocal.pk)
+                    logger.info("Dispatched process_audio for VocalTrack #%s", vocal.pk)
+                except Exception as exc:
+                    logger.error(
+                        "Failed to dispatch process_audio for VocalTrack #%s: %s", vocal.pk, exc
+                    )
+
+                if _is_htmx(request):
+                    return render(
+                        request,
+                        "projects/partials/vocal_item.html",
+                        {"vocal": vocal, "project": project, "can_select": False},
+                    )
+                messages.success(request, "Vocal enviado. Se está procesando.")
+                return redirect("projects:detail", slug=slug)
         if _is_htmx(request):
             return render(
                 request,

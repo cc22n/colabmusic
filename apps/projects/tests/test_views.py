@@ -1,3 +1,4 @@
+from unittest.mock import patch
 from django.test import TestCase
 from django.urls import reverse
 
@@ -258,3 +259,77 @@ class SelectContributionViewTest(TestCase):
         self.client.post(self.url, HTTP_HX_REQUEST="true")
         other_lyrics.refresh_from_db()
         self.assertFalse(other_lyrics.is_selected)
+
+
+class SubmitBeatAudioValidationTest(TestCase):
+    """Additional tests for audio validation in submit_beat."""
+
+    def setUp(self):
+        from apps.accounts.tests.factories import UserFactory
+        from apps.projects.models import ProjectStatus
+        from apps.projects.tests.factories import ProjectFactory
+
+        self.user = UserFactory()
+        self.project = ProjectFactory(
+            status=ProjectStatus.SEEKING_BEAT,
+            is_public=True,
+        )
+        self.url = reverse(
+            "projects:submit-beat", kwargs={"slug": self.project.slug}
+        )
+
+    @patch("apps.audio.tasks.process_audio.delay")
+    @patch("apps.projects.views.validate_mime_type")
+    def test_submit_beat_dispatches_celery_task(self, mock_mime, mock_task):
+        """A valid upload dispatches the process_audio Celery task."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        mock_mime.return_value = "audio/mpeg"
+        self.client.force_login(self.user)
+        audio = SimpleUploadedFile("beat.mp3", b"fakemp3data", content_type="audio/mpeg")
+        resp = self.client.post(
+            self.url,
+            {"original_file": audio, "bpm": 120, "key_signature": "Am"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(resp.status_code, 200)
+        mock_task.assert_called_once()
+
+    @patch("apps.projects.views.validate_mime_type")
+    def test_submit_beat_rejects_invalid_mime(self, mock_mime):
+        """Invalid MIME type adds error and returns 422."""
+        from django.core.exceptions import ValidationError
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        mock_mime.side_effect = ValidationError("Tipo no permitido")
+        self.client.force_login(self.user)
+        audio = SimpleUploadedFile(
+            "bad.exe", b"notaudio", content_type="application/octet-stream"
+        )
+        resp = self.client.post(
+            self.url,
+            {"original_file": audio},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(resp.status_code, 422)
+
+    def test_submit_beat_rejects_oversized_file(self):
+        """BeatSubmitForm validator rejects files over 50 MB."""
+        from io import BytesIO
+
+        from django.core.files.uploadedfile import InMemoryUploadedFile
+
+        from apps.projects.forms import BeatSubmitForm
+
+        # Create an UploadedFile where .size reports 60 MB (actual content is tiny)
+        f = InMemoryUploadedFile(
+            file=BytesIO(b"fake_audio"),
+            field_name="original_file",
+            name="big.mp3",
+            content_type="audio/mpeg",
+            size=60 * 1024 * 1024,
+            charset=None,
+        )
+        form = BeatSubmitForm(data={"bpm": 120}, files={"original_file": f})
+        self.assertFalse(form.is_valid())
+        self.assertIn("original_file", form.errors)

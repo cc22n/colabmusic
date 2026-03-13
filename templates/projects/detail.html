@@ -184,12 +184,9 @@
   {% if final_mix %}
   <section class="bg-gradient-to-br from-purple-900/40 to-gray-900 border border-purple-800 rounded-xl p-6">
     <h2 class="text-xl font-semibold text-white mb-2">🎵 Mix Final</h2>
-    <p class="text-gray-400 text-sm">{{ final_mix.play_count }} reproducciones</p>
-    {% if final_mix.processing_status == 'ready' %}
-    <p class="text-green-400 text-sm mt-2">Listo para reproducir</p>
-    {% else %}
-    <p class="text-yellow-400 text-sm mt-2 animate-pulse">Procesando audio...</p>
-    {% endif %}
+    <p class="text-gray-400 text-sm mb-3">{{ final_mix.play_count }} reproducciones</p>
+
+    {% include "components/audio_player.html" with audio_object=final_mix model_name="finalmix" track_id="mix-"|add:final_mix.pk|stringformat:"s" %}
   </section>
   {% endif %}
 

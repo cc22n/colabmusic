@@ -33,18 +33,13 @@ Contexto: vocal, project, can_select
   <p class="text-gray-400 text-sm">{{ vocal.description }}</p>
   {% endif %}
 
-  <div class="flex items-center gap-3 mt-2">
+  <!-- Audio player -->
+  {% include "components/audio_player.html" with audio_object=vocal model_name="vocaltrack" track_id="vocal-"|add:vocal.pk|stringformat:"s" %}
+
+  <div class="flex items-center gap-3 mt-3">
+    {% if vocal.audio_format %}
     <span class="text-xs text-gray-600">{{ vocal.audio_format|upper }}</span>
-    <span class="text-xs px-2 py-0.5 rounded-full
-      {% if vocal.processing_status == 'ready' %}bg-green-900 text-green-400
-      {% elif vocal.processing_status == 'processing' %}bg-yellow-900 text-yellow-400
-      {% elif vocal.processing_status == 'failed' %}bg-red-900 text-red-400
-      {% else %}bg-gray-700 text-gray-500{% endif %}">
-      {% if vocal.processing_status == 'ready' %}Listo
-      {% elif vocal.processing_status == 'processing' %}Procesando...
-      {% elif vocal.processing_status == 'failed' %}Error
-      {% else %}En cola{% endif %}
-    </span>
+    {% endif %}
     <span class="ml-auto">
       {% include "components/flag_button.html" with content_type_str="vocal" object_id=vocal.pk %}
     </span>
