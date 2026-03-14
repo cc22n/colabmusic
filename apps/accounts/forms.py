@@ -19,8 +19,11 @@ class CustomSignupForm(SignupForm):
         # We use a hidden widget — the actual UI is rendered as clickable
         # cards in the template using Alpine.js; this field just holds the
         # selected values that come back as multiple hidden inputs.
+        # to_field_name='name' lets Alpine.js send "lyricist"/"producer"/
+        # "vocalist" strings instead of integer PKs.
         widget=forms.MultipleHiddenInput,
         label="Roles musicales",
+        to_field_name="name",
     )
 
     def save(self, request):
