@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Buscar — ColabMusic{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-white mb-1">Buscar</h1>
+    <p class="text-gray-400 text-sm">Encuentra proyectos, letras, beats y artistas</p>
+  </div>
+
+  <!-- Search form -->
+  <div class="bg-gray-900 rounded-2xl border border-gray-800 p-5 mb-6">
+    <div class="flex flex-col sm:flex-row gap-3">
+
+      <!-- Main input -->
+      <div class="relative flex-1">
+        <span class="absolute inset-y-0 left-3 flex items-center text-gray-500">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+          </svg>
+        </span>
+        <input
+          id="main-search-input"
+          type="search"
+          name="q"
+          value="{{ q }}"
+          placeholder="Busca proyectos, artistas, letras, beats..."
+          maxlength="200"
+          autofocus
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-4 py-2.5
+                 text-white text-sm placeholder-gray-500 focus:outline-none
+                 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+          hx-get="{% url 'search:results' %}"
+          hx-trigger="keyup changed delay:400ms, search"
+          hx-target="#search-results"
+          hx-include="#type-filter, #genre-filter"
+          hx-push-url="true"
+          hx-indicator="#search-spinner"
+        >
+      </div>
+
+      <!-- Type filter -->
+      <select
+        id="type-filter"
+        name="type"
+        class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm
+               text-gray-300 focus:outline-none focus:border-purple-500 transition-colors"
+        hx-get="{% url 'search:results' %}"
+        hx-trigger="change"
+        hx-target="#search-results"
+        hx-include="#main-search-input, #genre-filter"
+        hx-push-url="true"
+      >
+        <option value="" {% if not current_type %}selected{% endif %}>Todos</option>
+        <option value="project" {% if current_type == "project" %}selected{% endif %}>Proyectos</option>
+        <option value="lyrics"  {% if current_type == "lyrics"  %}selected{% endif %}>Letras</option>
+        <option value="beat"    {% if current_type == "beat"    %}selected{% endif %}>Beats</option>
+        <option value="user"    {% if current_type == "user"    %}selected{% endif %}>Artistas</option>
+      </select>
+
+      <!-- Genre filter (only meaningful for projects) -->
+      {% if genres %}
+      <select
+        id="genre-filter"
+        name="genre"
+        class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm
+               text-gray-300 focus:outline-none focus:border-purple-500 transition-colors"
+        hx-get="{% url 'search:results' %}"
+        hx-trigger="change"
+        hx-target="#search-results"
+        hx-include="#main-search-input, #type-filter"
+        hx-push-url="true"
+      >
+        <option value="" {% if not current_genre %}selected{% endif %}>Género: todos</option>
+        {% for genre in genres %}
+        <option value="{{ genre.slug }}"
+                {% if current_genre == genre.slug %}selected{% endif %}>
+          {{ genre.name }}
+        </option>
+        {% endfor %}
+      </select>
+      {% endif %}
+
+    </div>
+
+    <!-- Loading indicator -->
+    <div id="search-spinner"
+         class="htmx-indicator mt-3 flex items-center gap-2 text-gray-500 text-xs">
+      <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+      </svg>
+      Buscando...
+    </div>
+  </div>
+
+  <!-- Results area — populated by HTMX -->
+  <div id="search-results"
+       {% if q %}
+         hx-get="{% url 'search:results' %}?q={{ q|urlencode }}&type={{ current_type }}&genre={{ current_genre }}"
+         hx-trigger="load"
+         hx-swap="innerHTML"
+       {% endif %}>
+    {% if not q %}
+    <div class="text-center py-16 text-gray-600">
+      <svg class="w-12 h-12 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+      </svg>
+      <p class="text-sm">Escribe algo para comenzar a buscar</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

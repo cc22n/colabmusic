@@ -1,0 +1,172 @@
+{% load i18n %}
+
+{% if not empty_query %}
+
+  {% if is_dropdown %}
+  {# ── Navbar dropdown compact view ───────────────────────────────────────── #}
+
+    {% if results %}
+      {% for entry in results %}
+      {% with model=entry.content_type.model %}
+      <a href="{{ entry.url }}"
+         class="flex items-start gap-3 px-4 py-3 hover:bg-gray-800 transition-colors border-b border-gray-800/60 last:border-0">
+
+        {# Type badge #}
+        <span class="mt-0.5 shrink-0 text-base leading-none">
+          {% if model == "project" %}🎵
+          {% elif model == "lyrics" %}✍️
+          {% elif model == "beat" %}🎹
+          {% else %}👤
+          {% endif %}
+        </span>
+
+        <div class="min-w-0 flex-1">
+          <p class="text-white text-sm font-medium truncate">{{ entry.title }}</p>
+          {% if entry.description %}
+          <p class="text-gray-400 text-xs mt-0.5 line-clamp-1">{{ entry.description }}</p>
+          {% endif %}
+        </div>
+
+        {# Model label chip #}
+        <span class="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded
+                     {% if model == "project" %}bg-purple-900/50 text-purple-300
+                     {% elif model == "lyrics" %}bg-blue-900/50 text-blue-300
+                     {% elif model == "beat" %}bg-green-900/50 text-green-300
+                     {% else %}bg-gray-700 text-gray-300
+                     {% endif %}">
+          {% if model == "project" %}Proyecto
+          {% elif model == "lyrics" %}Letra
+          {% elif model == "beat" %}Beat
+          {% else %}Artista
+          {% endif %}
+        </span>
+      </a>
+      {% endwith %}
+      {% endfor %}
+
+      {# "See all results" footer #}
+      <a href="{% url 'search:search' %}?q={{ q|urlencode }}"
+         class="flex items-center justify-center gap-1 px-4 py-2.5 text-purple-400
+                text-xs font-medium hover:bg-gray-800 transition-colors border-t border-gray-800">
+        Ver todos los resultados
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+
+    {% else %}
+      {# No results in dropdown #}
+      <div class="px-4 py-4 text-center">
+        <p class="text-gray-500 text-sm">Sin resultados para <span class="text-gray-400">"{{ q }}"</span></p>
+      </div>
+    {% endif %}
+
+  {% else %}
+  {# ── Full search page results ────────────────────────────────────────────── #}
+
+    {% if results %}
+    <div class="space-y-3">
+      {% for entry in results %}
+      {% with model=entry.content_type.model %}
+      <a href="{{ entry.url }}"
+         class="flex items-start gap-4 p-4 bg-gray-900 border border-gray-800
+                rounded-xl hover:border-gray-700 hover:bg-gray-800/40 transition-all">
+
+        {# Icon column #}
+        <div class="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xl
+                    {% if model == "project" %}bg-purple-900/40
+                    {% elif model == "lyrics" %}bg-blue-900/40
+                    {% elif model == "beat" %}bg-green-900/40
+                    {% else %}bg-gray-700/40
+                    {% endif %}">
+          {% if model == "project" %}🎵
+          {% elif model == "lyrics" %}✍️
+          {% elif model == "beat" %}🎹
+          {% else %}👤
+          {% endif %}
+        </div>
+
+        {# Content #}
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <p class="text-white font-semibold text-sm truncate">{{ entry.title }}</p>
+            <span class="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded
+                         {% if model == "project" %}bg-purple-900/50 text-purple-300
+                         {% elif model == "lyrics" %}bg-blue-900/50 text-blue-300
+                         {% elif model == "beat" %}bg-green-900/50 text-green-300
+                         {% else %}bg-gray-700 text-gray-300
+                         {% endif %}">
+              {% if model == "project" %}Proyecto
+              {% elif model == "lyrics" %}Letra
+              {% elif model == "beat" %}Beat
+              {% else %}Artista
+              {% endif %}
+            </span>
+          </div>
+          {% if entry.description %}
+          <p class="text-gray-400 text-xs line-clamp-2">{{ entry.description }}</p>
+          {% endif %}
+        </div>
+
+        {# Arrow #}
+        <svg class="shrink-0 w-4 h-4 text-gray-600 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+      {% endwith %}
+      {% endfor %}
+    </div>
+
+    {# Pagination #}
+    {% if results.has_other_pages %}
+    <div class="flex items-center justify-center gap-2 mt-6">
+
+      {% if results.has_previous %}
+      <button
+        hx-get="{% url 'search:results' %}?q={{ q|urlencode }}&type={{ type_filter }}&genre={{ genre_slug }}&page={{ results.previous_page_number }}"
+        hx-target="#search-results"
+        hx-push-url="true"
+        hx-swap="innerHTML"
+        class="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-300
+               text-sm hover:bg-gray-700 transition-colors"
+      >
+        ← Anterior
+      </button>
+      {% endif %}
+
+      <span class="text-gray-500 text-sm">
+        Página {{ results.number }} de {{ results.paginator.num_pages }}
+      </span>
+
+      {% if results.has_next %}
+      <button
+        hx-get="{% url 'search:results' %}?q={{ q|urlencode }}&type={{ type_filter }}&genre={{ genre_slug }}&page={{ results.next_page_number }}"
+        hx-target="#search-results"
+        hx-push-url="true"
+        hx-swap="innerHTML"
+        class="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-300
+               text-sm hover:bg-gray-700 transition-colors"
+      >
+        Siguiente →
+      </button>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# Result count #}
+    <p class="text-gray-600 text-xs text-center mt-4">
+      {{ results.paginator.count }} resultado{{ results.paginator.count|pluralize }} para "{{ q }}"
+    </p>
+
+    {% else %}
+    {# No results — full page #}
+    <div class="text-center py-16">
+      <div class="text-4xl mb-4">🔍</div>
+      <p class="text-gray-400 font-medium mb-1">Sin resultados para "{{ q }}"</p>
+      <p class="text-gray-600 text-sm">Prueba con otras palabras o cambia los filtros</p>
+    </div>
+    {% endif %}
+
+  {% endif %} {# end is_dropdown / full view #}
+
+{% endif %} {# end not empty_query #}

@@ -12,7 +12,7 @@
       <div class="hidden md:flex items-center gap-6">
         <a href="/projects/" class="text-gray-300 hover:text-white transition-colors text-sm">Proyectos</a>
         <a href="/rankings/" class="text-gray-300 hover:text-white transition-colors text-sm">Rankings</a>
-        <a href="/search/" class="text-gray-300 hover:text-white transition-colors text-sm">Buscar</a>
+        {% include "components/search_box.html" %}
 
         {% if user.is_authenticated %}
         <a href="/projects/new/" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
