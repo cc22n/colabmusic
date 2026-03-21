@@ -8,16 +8,21 @@
   <!-- Page header -->
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold text-white">{{ page_title }}</h1>
-    <div class="flex gap-2">
+    <div class="flex flex-wrap gap-2">
       <a href="{% url 'rankings:global' %}"
          class="text-xs px-3 py-1.5 rounded-lg transition-colors
-                {% if not is_trending %}bg-purple-700 text-white{% else %}border border-gray-600 text-gray-400 hover:text-white{% endif %}">
+                {% if not is_trending and not active_role %}bg-purple-700 text-white{% else %}border border-gray-600 text-gray-400 hover:text-white{% endif %}">
         Rankings
       </a>
       <a href="{% url 'rankings:trending' %}"
          class="text-xs px-3 py-1.5 rounded-lg transition-colors
-                {% if is_trending %}bg-purple-700 text-white{% else %}border border-gray-600 text-gray-400 hover:text-white{% endif %}">
+                {% if is_trending and not is_covers and not genre %}bg-purple-700 text-white{% else %}border border-gray-600 text-gray-400 hover:text-white{% endif %}">
         Trending
+      </a>
+      <a href="{% url 'rankings:covers' %}"
+         class="text-xs px-3 py-1.5 rounded-lg transition-colors
+                {% if is_covers %}bg-purple-700 text-white{% else %}border border-gray-600 text-gray-400 hover:text-white{% endif %}">
+        Covers
       </a>
     </div>
   </div>

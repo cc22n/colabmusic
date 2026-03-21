@@ -197,7 +197,7 @@ class TrendingView(ListView):
 
 
 class RankingByGenreView(ListView):
-    """Public projects filtered by genre slug (stub — pagination only)."""
+    """Public projects filtered by genre slug."""
 
     model = Project
     template_name = "rankings/rankings.html"
@@ -217,4 +217,54 @@ class RankingByGenreView(ListView):
         ctx["is_trending"] = True
         ctx["genre"] = self.genre
         ctx["page_title"] = f"Proyectos de {self.genre.name}"
+        return ctx
+
+
+class RankingByRoleView(ListView):
+    """Top users filtered by musical role."""
+
+    model = UserProfile
+    template_name = "rankings/rankings.html"
+    context_object_name = "profiles"
+    paginate_by = 20
+
+    def get_queryset(self):
+        from apps.accounts.models import Role
+
+        self.role = get_object_or_404(Role, name=self.kwargs["role"])
+        return (
+            UserProfile.objects.filter(roles=self.role)
+            .select_related("user")
+            .prefetch_related("roles")
+            .order_by("-reputation_score")
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["is_trending"] = False
+        ctx["active_role"] = self.role
+        ctx["page_title"] = f"Top {self.role.display_name}s"
+        return ctx
+
+
+class CoverRankingsView(ListView):
+    """Top public cover projects ordered by recency."""
+
+    model = Project
+    template_name = "rankings/rankings.html"
+    context_object_name = "projects"
+    paginate_by = 20
+
+    def get_queryset(self):
+        return (
+            Project.objects.filter(is_public=True, project_type="cover")
+            .select_related("created_by", "genre")
+            .order_by("-updated_at")
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["is_trending"] = True
+        ctx["is_covers"] = True
+        ctx["page_title"] = "Covers"
         return ctx

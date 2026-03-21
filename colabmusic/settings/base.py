@@ -167,6 +167,10 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": 86400.0,  # every day
         "kwargs": {"period": "monthly"},
     },
+    "award-top10-weekly-bonus": {
+        "task": "apps.rankings.tasks.award_top10_weekly_bonus",
+        "schedule": 604800.0,  # every week (7 days)
+    },
 }
 
 # S3 / MinIO storage
