@@ -1,0 +1,53 @@
+{# Single notification row — can be swapped in-place by mark_read #}
+<div id="notification-{{ notification.pk }}"
+     class="flex items-start gap-3 p-4 rounded-lg transition-colors
+            {% if notification.is_read %}bg-gray-800/50{% else %}bg-gray-700/60 border-l-2 border-purple-500{% endif %}">
+
+  {# Icon by type #}
+  <div class="flex-shrink-0 mt-0.5">
+    {% if notification.notification_type == 'vote_received' %}
+      <span class="text-yellow-400 text-lg">⬆</span>
+    {% elif notification.notification_type == 'contribution_selected' %}
+      <span class="text-green-400 text-lg">✓</span>
+    {% elif notification.notification_type == 'project_complete' %}
+      <span class="text-purple-400 text-lg">🎵</span>
+    {% elif notification.notification_type == 'new_contribution' %}
+      <span class="text-blue-400 text-lg">＋</span>
+    {% elif notification.notification_type == 'badge_awarded' %}
+      <span class="text-yellow-300 text-lg">🏅</span>
+    {% elif notification.notification_type == 'top_ranking' %}
+      <span class="text-orange-400 text-lg">🏆</span>
+    {% else %}
+      <span class="text-gray-400 text-lg">•</span>
+    {% endif %}
+  </div>
+
+  {# Content #}
+  <div class="flex-1 min-w-0">
+    <p class="text-sm font-medium {% if notification.is_read %}text-gray-300{% else %}text-white{% endif %}">
+      {{ notification.title }}
+    </p>
+    <p class="text-xs text-gray-400 mt-0.5">{{ notification.message }}</p>
+    <div class="flex items-center gap-3 mt-1.5">
+      <span class="text-xs text-gray-500">{{ notification.created_at|timesince }} ago</span>
+      {% if notification.link %}
+      <a href="{{ notification.link }}" class="text-xs text-purple-400 hover:text-purple-300">Ver →</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Mark-read button (only for unread) #}
+  {% if not notification.is_read %}
+  <button
+    hx-post="{% url 'notifications:mark-read' notification.pk %}"
+    hx-target="#notification-{{ notification.pk }}"
+    hx-swap="outerHTML"
+    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+    class="flex-shrink-0 text-gray-500 hover:text-gray-300 transition-colors"
+    title="Marcar como leída">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+  </button>
+  {% endif %}
+</div>

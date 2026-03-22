@@ -18,7 +18,7 @@ class RoleModelTest(TestCase):
         self.assertEqual(role.name, Role.RoleName.LYRICIST)
 
     def test_role_str(self):
-        role = RoleFactory(display_name="Productor")
+        role = RoleFactory(name=Role.RoleName.PRODUCER, display_name="Productor")
         self.assertEqual(str(role), "Productor")
 
 

@@ -78,6 +78,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.notifications.context_processors.unread_notification_count",
             ],
         },
     },
@@ -170,6 +171,11 @@ CELERY_BEAT_SCHEDULE = {
     "award-top10-weekly-bonus": {
         "task": "apps.rankings.tasks.award_top10_weekly_bonus",
         "schedule": 604800.0,  # every week (7 days)
+    },
+    "cleanup-old-notifications": {
+        "task": "apps.notifications.tasks.cleanup_old_notifications",
+        "schedule": 86400.0,  # every day
+        "kwargs": {"days": 90},
     },
 }
 

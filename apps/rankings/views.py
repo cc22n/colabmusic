@@ -109,6 +109,24 @@ def cast_vote(request, content_type_str, object_id):
                 points=_points_for(vote_type_raw),
                 reason=f"Received {vote_type_raw} on {model_name} #{object_id}",
             )
+            # Notify the author of the upvote (not for self-votes or downvotes)
+            if (
+                author
+                and author != request.user
+                and vote_type_raw == Vote.VoteType.UPVOTE
+            ):
+                from apps.notifications.tasks import send_notification
+
+                send_notification.delay(
+                    recipient_id=author.pk,
+                    notification_type="vote_received",
+                    title="Recibiste un voto positivo",
+                    message=(
+                        f"{request.user.username} votó positivamente "
+                        f"tu {model_name}."
+                    ),
+                    sender_id=request.user.pk,
+                )
 
     # Re-render the vote_buttons partial with fresh counts
     qs = Vote.objects.filter(content_type=ct, object_id=object_id)

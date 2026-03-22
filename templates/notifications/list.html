@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Notificaciones — ColabMusic{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-8">
+
+  {# Header #}
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-white">Notificaciones</h1>
+    <button
+      hx-post="{% url 'notifications:mark-all-read' %}"
+      hx-target="#notification-bell"
+      hx-swap="outerHTML"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+      class="text-xs text-gray-400 hover:text-white transition-colors border border-gray-600
+             hover:border-gray-400 px-3 py-1.5 rounded-lg">
+      Marcar todas como leídas
+    </button>
+  </div>
+
+  {# Empty state #}
+  {% if not notifications %}
+  <div class="text-center py-20">
+    <div class="text-6xl mb-4">🔔</div>
+    <p class="text-gray-400 text-lg">Sin notificaciones</p>
+    <p class="text-gray-500 text-sm mt-1">Aquí aparecerán tus votos, selecciones y logros.</p>
+  </div>
+
+  {% else %}
+  {# Notification list #}
+  <div class="space-y-2">
+    {% for notification in notifications %}
+      {% include "notifications/partials/notification_item.html" %}
+    {% endfor %}
+  </div>
+
+  {# Pagination #}
+  {% if is_paginated %}
+  <div class="flex justify-center gap-2 mt-8">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}"
+       class="px-3 py-1.5 text-sm border border-gray-600 text-gray-300 rounded-lg hover:text-white hover:border-gray-400 transition-colors">
+      ← Anterior
+    </a>
+    {% endif %}
+    <span class="px-3 py-1.5 text-sm text-gray-500">
+      Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}"
+       class="px-3 py-1.5 text-sm border border-gray-600 text-gray-300 rounded-lg hover:text-white hover:border-gray-400 transition-colors">
+      Siguiente →
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

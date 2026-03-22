@@ -501,6 +501,24 @@ def select_contribution(request, slug, contribution_type, pk):
     except Exception:
         pass  # Already past this state or archived — fine
 
+    # Notify the contributor that their work was selected
+    AUTHOR_FIELDS = {"lyrics": "author", "beat": "producer", "vocal": "vocalist"}
+    contributor = getattr(obj, AUTHOR_FIELDS.get(contribution_type, ""), None)
+    if contributor and contributor != request.user:
+        from apps.notifications.tasks import send_notification
+
+        send_notification.delay(
+            recipient_id=contributor.pk,
+            notification_type="contribution_selected",
+            title="¡Tu contribución fue seleccionada!",
+            message=(
+                f"Tu {contribution_type} fue seleccionado(a) "
+                f"en el proyecto «{project.title}»."
+            ),
+            sender_id=request.user.pk,
+            link=project.get_absolute_url(),
+        )
+
     messages.success(request, "Contribución seleccionada.")
 
     if _is_htmx(request):
