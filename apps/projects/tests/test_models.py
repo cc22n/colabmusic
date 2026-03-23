@@ -66,6 +66,20 @@ class ProjectModelTest(TestCase):
         project.transition_to(ProjectStatus.ARCHIVED)
         self.assertEqual(project.status, ProjectStatus.ARCHIVED)
 
+    def test_slug_deduplication(self):
+        """Two projects with the same title must get distinct slugs."""
+        p1 = ProjectFactory(title="Mi Canción")
+        p2 = ProjectFactory(title="Mi Canción")
+        self.assertNotEqual(p1.slug, p2.slug)
+        # Both slugs should start with the same base
+        self.assertTrue(p2.slug.startswith("mi-cancion"))
+
+    def test_slug_non_ascii_fallback(self):
+        """A title composed entirely of non-ASCII characters must not produce an empty slug."""
+        project = ProjectFactory(title="音楽プロジェクト")
+        self.assertTrue(len(project.slug) > 0)
+        self.assertIn("proyecto-", project.slug)
+
 
 class LyricsModelTest(TestCase):
     def test_create_lyrics(self):

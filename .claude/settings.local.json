@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit:*)",
+      "Bash(dir:*)",
+      "Bash(python -c:*)",
+      "Bash(python3:*)",
+      "Bash(printf:*)",
+      "Bash(echo:*)",
+      "Bash(/usr/bin/bash -c 'python3 -c \"\"print\\(42\\)\"\"')",
+      "Bash(/usr/bin/bash -c 'python3 -c \"\"import sys; sys.stdout.write\\(str\\(42\\)+chr\\(10\\)\\)\"\"')",
+      "Bash(/usr/bin/bash -c 'python3 << PYEOF\nimport os\nprint\\(\"\"hello from heredoc\"\"\\)\nPYEOF')",
+      "Bash(/usr/bin/bash:*)",
+      "Bash(python manage.py shell --settings=colabmusic.settings.development -c \":*)",
+      "Bash(\"C:\\\\Users\\\\coral\\\\Desktop\\\\colabmusic\\\\apps\\\\search\\\\tests\\\\__init__.py\")",
+      "Bash(ls \"C:\\\\Users\\\\coral\\\\Desktop\\\\colabmusic\\\\apps\\\\search\\\\tests\"\" 2>/dev/null || echo \"directory does not exist \")"
+    ]
+  }
+}

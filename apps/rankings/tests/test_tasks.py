@@ -210,6 +210,46 @@ class AwardTop10WeeklyBonusTest(TestCase):
         self.assertEqual(log.points, 100)
         self.assertIn("Top 10", log.reason)
 
+    def test_bonus_not_doubled_on_retry(self):
+        """
+        Running award_top10_weekly_bonus twice in the same week must NOT
+        grant the +100 bonus twice (idempotency guard via ReputationLog check).
+        """
+        user = UserFactory()
+        entries = [
+            {
+                "rank": 1,
+                "user_id": user.pk,
+                "username": user.username,
+                "display_name": str(user),
+                "reputation_score": 500,
+                "roles": [],
+            }
+        ]
+        RankingCache.objects.create(
+            ranking_type="global",
+            period="weekly",
+            genre=None,
+            role=None,
+            entries=entries,
+        )
+
+        # First run: bonus awarded
+        award_top10_weekly_bonus()
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.reputation_score, 100)
+        self.assertEqual(
+            ReputationLog.objects.filter(user=user, points=100).count(), 1
+        )
+
+        # Second run (e.g. Celery retry): bonus must NOT be awarded again
+        award_top10_weekly_bonus()
+        user.profile.refresh_from_db()
+        self.assertEqual(user.profile.reputation_score, 100)  # unchanged
+        self.assertEqual(
+            ReputationLog.objects.filter(user=user, points=100).count(), 1  # still 1
+        )
+
 
 class RankingByRoleViewTest(TestCase):
     def setUp(self):

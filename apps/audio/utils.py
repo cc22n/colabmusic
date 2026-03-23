@@ -304,4 +304,6 @@ def get_streaming_url(file_field, request=None) -> Optional[str]:
         return url
     except Exception as exc:
         logger.error("Failed to generate presigned URL: %s", exc)
-        return file_field.url  # fallback
+        # Do NOT fall back to file_field.url — that would expose a direct S3 URL,
+        # bypassing the private ACL on the bucket for files in private projects.
+        return None

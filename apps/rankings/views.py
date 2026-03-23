@@ -10,6 +10,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django.db.models import F
 from django.http import HttpResponseBadRequest, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import ListView
@@ -69,7 +70,9 @@ def cast_vote(request, content_type_str, object_id):
         return HttpResponseBadRequest("Tipo de voto no válido.")
 
     with transaction.atomic():
-        existing_vote = Vote.objects.filter(
+        # select_for_update() serializa acceso concurrente al mismo (user, content, object)
+        # evitando IntegrityError por unique_together bajo carga simultánea.
+        existing_vote = Vote.objects.select_for_update().filter(
             user=request.user, content_type=ct, object_id=object_id
         ).first()
 
@@ -158,6 +161,8 @@ def _adjust_reputation(author, voter, points, reason):
     """
     Award *points* to *author*'s reputation.
     A voter cannot gain/lose reputation from their own votes.
+    Uses F() expression for an atomic UPDATE — avoids read-modify-write race condition
+    under concurrent votes on the same content.
     Creates a ReputationLog entry for audit.
     """
     if author is None or author == voter:
@@ -165,8 +170,11 @@ def _adjust_reputation(author, voter, points, reason):
     profile = getattr(author, "profile", None)
     if profile is None:
         return
-    profile.reputation_score += points
-    profile.save(update_fields=["reputation_score"])
+    # Atomic UPDATE — safe under concurrent requests hitting the same author
+    from apps.accounts.models import UserProfile
+    UserProfile.objects.filter(pk=profile.pk).update(
+        reputation_score=F("reputation_score") + points
+    )
     ReputationLog.objects.create(user=author, points=points, reason=reason)
 
 

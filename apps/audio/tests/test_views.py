@@ -5,7 +5,8 @@ Tests for apps.audio.views -- API endpoints.
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.projects.tests.factories import BeatFactory
+from apps.accounts.tests.factories import UserFactory
+from apps.projects.tests.factories import BeatFactory, ProjectFactory
 
 
 class WaveformDataViewTest(TestCase):
@@ -85,3 +86,97 @@ class ProcessingStatusPollViewTest(TestCase):
         )
         resp = self.client.get(url)
         self.assertIn(b"Error", resp.content)
+
+
+# ── Access control tests (IDOR fix) ───────────────────────────────────────────
+
+
+class WaveformAccessControlTest(TestCase):
+    """
+    Verify that private project audio is inaccessible to non-owners,
+    while public project audio remains accessible to everyone.
+    """
+
+    def setUp(self):
+        self.owner = UserFactory()
+        self.other = UserFactory()
+        self.public_project = ProjectFactory(is_public=True, created_by=self.owner)
+        self.private_project = ProjectFactory(is_public=False, created_by=self.owner)
+        self.public_beat = BeatFactory(
+            project=self.public_project, processing_status="ready",
+            waveform_data={"peaks": [0.5]},
+        )
+        self.private_beat = BeatFactory(
+            project=self.private_project, processing_status="ready",
+            waveform_data={"peaks": [0.5]},
+        )
+
+    # ── waveform_data ──────────────────────────────────────────────────────────
+
+    def test_waveform_public_project_allows_anonymous(self):
+        """Anonymous users can access waveform data for public projects."""
+        url = reverse(
+            "audio:waveform",
+            kwargs={"model_name": "beat", "object_id": self.public_beat.pk},
+        )
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_waveform_private_project_denies_anonymous(self):
+        """Anonymous users cannot access waveform data for private projects."""
+        url = reverse(
+            "audio:waveform",
+            kwargs={"model_name": "beat", "object_id": self.private_beat.pk},
+        )
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_waveform_private_project_denies_other_user(self):
+        """Authenticated non-owner cannot access waveform data for private projects."""
+        self.client.force_login(self.other)
+        url = reverse(
+            "audio:waveform",
+            kwargs={"model_name": "beat", "object_id": self.private_beat.pk},
+        )
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_waveform_private_project_allows_owner(self):
+        """Project owner can access waveform data for their own private projects."""
+        self.client.force_login(self.owner)
+        url = reverse(
+            "audio:waveform",
+            kwargs={"model_name": "beat", "object_id": self.private_beat.pk},
+        )
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+    # ── processing_status_poll ─────────────────────────────────────────────────
+
+    def test_status_poll_public_project_allows_anonymous(self):
+        """Anonymous users can poll processing status for public project audio."""
+        url = reverse(
+            "audio:status",
+            kwargs={"model_name": "beat", "object_id": self.public_beat.pk},
+        )
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_status_poll_private_project_denies_anonymous(self):
+        """Anonymous users cannot poll processing status for private project audio."""
+        url = reverse(
+            "audio:status",
+            kwargs={"model_name": "beat", "object_id": self.private_beat.pk},
+        )
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_status_poll_private_project_allows_owner(self):
+        """Project owner can poll processing status for their private project audio."""
+        self.client.force_login(self.owner)
+        url = reverse(
+            "audio:status",
+            kwargs={"model_name": "beat", "object_id": self.private_beat.pk},
+        )
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)

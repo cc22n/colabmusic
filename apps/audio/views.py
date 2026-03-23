@@ -6,8 +6,12 @@ waveform_data:          GET /api/waveform/<model_name>/<object_id>/
 
 processing_status_poll: GET /api/audio/status/<model_name>/<object_id>/
                         HTMX polling — returns an HTML status badge partial.
+
+Access control: public projects are accessible to any visitor (including anonymous).
+Private projects are only accessible to the project owner.
 """
 
+import json
 import logging
 
 from django.apps import apps
@@ -37,6 +41,26 @@ def _get_audio_object(model_name: str, object_id: int):
     return get_object_or_404(Model, pk=object_id)
 
 
+def _check_audio_access(request, obj) -> bool:
+    """
+    Return True if the request may access this audio object.
+
+    Rules:
+    - Public project  → allow anyone (anonymous or authenticated)
+    - Private project → allow only the project owner
+    - FinalMix uses OneToOneField to project; Beat/VocalTrack use FK.
+    """
+    # FinalMix has a OneToOneField, Beat/VocalTrack have a FK — both expose .project
+    project = getattr(obj, "project", None)
+    if project is None:
+        # Defensive: if no project attribute, deny rather than expose
+        return False
+    if project.is_public:
+        return True
+    # Private project: only the owner may access
+    return request.user.is_authenticated and request.user == project.created_by
+
+
 # ---------------------------------------------------------------------------
 # GET /api/waveform/<model_name>/<object_id>/
 # ---------------------------------------------------------------------------
@@ -47,11 +71,15 @@ def waveform_data(request, model_name: str, object_id: int):
     """
     Return the pre-computed waveform peaks for a Beat, VocalTrack or FinalMix.
     Response: {"peaks": [...], "streaming_url": "...", "duration": 183.5}
-    Returns 202 if still processing, 400 for unknown model.
+    Returns 202 if still processing, 400 for unknown model, 403 for private access.
     """
     obj = _get_audio_object(model_name, object_id)
     if obj is None:
         return JsonResponse({"error": "Modelo no soportado"}, status=400)
+
+    # Access control: private projects only visible to the owner
+    if not _check_audio_access(request, obj):
+        return JsonResponse({"error": "No autorizado"}, status=403)
 
     if obj.processing_status != "ready":
         return JsonResponse(
@@ -98,12 +126,20 @@ def processing_status_poll(request, model_name: str, object_id: int):
     HTMX polling endpoint.
     Returns an HTML snippet that replaces itself via hx-swap="outerHTML".
     When status == 'ready', returns the full Wavesurfer.js player so polling stops.
+    Returns 403 HTML snippet for private projects accessed without permission.
     """
     obj = _get_audio_object(model_name, object_id)
     if obj is None:
         return HttpResponse(
             '<span class="text-red-400 text-xs">Error: modelo no soportado</span>',
             status=400,
+        )
+
+    # Access control: private projects only visible to the owner
+    if not _check_audio_access(request, obj):
+        return HttpResponse(
+            '<span class="text-red-400 text-xs">No autorizado</span>',
+            status=403,
         )
 
     status = obj.processing_status
@@ -142,7 +178,9 @@ def _render_player_html(
 ) -> str:
     """Return the Wavesurfer.js player HTML for a ready audio object."""
     waveform_url = f"/api/waveform/{model_name}/{object_id}/"
-    audio_src = streaming_url or ""
+    # json.dumps() serializes the URL as a JS string literal with proper escaping,
+    # preventing XSS if the URL ever contains single-quotes or backslashes.
+    audio_src_js = json.dumps(streaming_url or "")
 
     return (
         f'<div class="mt-3 audio-player" id="player-{track_id}">'
@@ -164,7 +202,7 @@ def _render_player_html(
         f"  fetch('{waveform_url}')"
         f"    .then(function(r){{return r.json();}})"
         f"    .then(function(data){{"
-        f"      var url=data.streaming_url||'{audio_src}';"
+        f"      var url=data.streaming_url||{audio_src_js};"
         f"      if(!url)return;"
         f"      var ws=WaveSurfer.create({{"
         f"        container:'#waveform-{track_id}',"

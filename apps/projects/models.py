@@ -3,6 +3,8 @@ Models for the projects app.
 Project (state machine), Lyrics, Beat, VocalTrack, FinalMix + AudioMixin abstract.
 """
 
+import uuid
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -16,9 +18,17 @@ User = get_user_model()
 
 
 def audio_upload_path(instance, filename):
-    """Upload path for original audio files."""
+    """
+    Upload path for original audio files.
+
+    Uses UUID4 instead of instance.pk because Django calls upload_to *before*
+    the first save(), so instance.pk would be None for new objects, causing
+    all new uploads to share the directory 'audio/original/<model>/None/'.
+    """
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "bin"
+    unique = uuid.uuid4().hex
     app_label = instance.__class__.__name__.lower()
-    return f"audio/original/{app_label}/{instance.pk}/{filename}"
+    return f"audio/original/{app_label}/{unique}.{ext}"
 
 
 def streaming_upload_path(instance, filename):
@@ -163,7 +173,16 @@ class Project(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            # Fallback to UUID-based slug if title is entirely non-ASCII
+            # (slugify returns '' for e.g. Chinese/Arabic-only titles)
+            base_slug = slugify(self.title) or f"proyecto-{uuid.uuid4().hex[:8]}"
+            slug = base_slug
+            counter = 1
+            # Deduplicate: append incrementing suffix if slug already taken
+            while Project.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
         if not self.status:
             if self.project_type == ProjectType.COVER:
                 self.status = ProjectStatus.SEEKING_BEAT

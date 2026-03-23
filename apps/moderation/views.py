@@ -8,6 +8,7 @@ resolve_flag: staff POST — creates ModerationAction, updates Flag status.
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.contenttypes.models import ContentType
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotAllowed
@@ -26,12 +27,32 @@ FLAGGABLE_MODELS = {
 }
 
 
+FLAG_RATE_LIMIT = 20  # max flags per hour per user
+
+
 def _is_htmx(request):
     return request.headers.get("HX-Request") == "true"
 
 
 def _staff_check(user):
     return user.is_active and user.is_staff
+
+
+def _check_flag_rate_limit(user_id: int) -> bool:
+    """Return True if the user is within the flag rate limit (20/hour)."""
+    return cache.get(f"flag_rate:{user_id}", 0) < FLAG_RATE_LIMIT
+
+
+def _increment_flag_count(user_id: int) -> None:
+    """
+    Increment the per-user flag counter (expires in 1 hour).
+    Uses cache.add() for atomic set-if-not-exists to avoid TOCTOU race condition.
+    """
+    key = f"flag_rate:{user_id}"
+    if not cache.add(key, 0, timeout=3600):
+        cache.incr(key)
+    else:
+        cache.incr(key)
 
 
 # ── Flag form (HTMX GET) ──────────────────────────────────────────────────────
@@ -79,10 +100,21 @@ def flag_form(request, content_type_str, object_id):
 def submit_flag(request, content_type_str, object_id):
     """
     POST /moderation/flag/<content_type>/<object_id>/submit/
-    Rate limited in middleware/decorator (20/h). Returns HTMX partial.
+    Rate limited: 20 flags per hour per user. Returns HTMX partial.
     """
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
+
+    # Rate limit: prevent spam-flagging to abuse auto-hide threshold
+    if not _check_flag_rate_limit(request.user.id):
+        if _is_htmx(request):
+            return HttpResponse(
+                '<p class="text-red-400 text-sm">'
+                "Demasiados reportes. Límite: 20 por hora."
+                "</p>",
+                status=429,
+            )
+        return HttpResponse("Demasiados reportes. Límite: 20 por hora.", status=429)
 
     config = FLAGGABLE_MODELS.get(content_type_str)
     if config is None:
@@ -123,6 +155,9 @@ def submit_flag(request, content_type_str, object_id):
             "moderation/flag_confirm.html",
             {"already_flagged": True, "content_type_str": content_type_str, "object_id": object_id},
         )
+
+    # Increment rate limit counter after successful flag creation
+    _increment_flag_count(request.user.id)
 
     # Dispatch async threshold check
     check_flag_threshold.delay(flag.id)

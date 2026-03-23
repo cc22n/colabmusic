@@ -9,7 +9,8 @@ from datetime import timedelta
 
 from celery import shared_task
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Count
+from django.db import transaction
+from django.db.models import Count, F
 from django.utils import timezone
 
 
@@ -162,12 +163,18 @@ def calculate_rankings(period: str = "weekly") -> None:
 
 @shared_task
 def award_top10_weekly_bonus() -> None:
-    """Award +100 reputation to users in the top-10 weekly global ranking."""
+    """
+    Award +100 reputation to users in the top-10 weekly global ranking.
+
+    Idempotent: checks ReputationLog for an existing bonus entry in the last 7 days
+    before awarding, so retries or duplicate runs never grant the bonus twice.
+    Uses F() expression + transaction.atomic() for each user to be race-condition safe.
+    """
     from apps.accounts.models import UserProfile
     from apps.rankings.models import RankingCache, ReputationLog
 
     try:
-        cache = RankingCache.objects.get(
+        ranking_cache = RankingCache.objects.get(
             ranking_type="global",
             period="weekly",
             genre=None,
@@ -176,17 +183,34 @@ def award_top10_weekly_bonus() -> None:
     except RankingCache.DoesNotExist:
         return
 
-    for entry in cache.entries[:10]:
+    # Idempotency window: same 7-day rolling window used by _since("weekly")
+    week_start = timezone.now() - timedelta(days=7)
+    bonus_reason = "Top 10 semanal — bonus de reputación"
+
+    for entry in ranking_cache.entries[:10]:
         try:
             profile = UserProfile.objects.select_related("user").get(
                 user_id=entry["user_id"]
             )
         except UserProfile.DoesNotExist:
             continue
-        profile.reputation_score += 100
-        profile.save(update_fields=["reputation_score"])
-        ReputationLog.objects.create(
-            user=profile.user,
-            points=100,
-            reason="Top 10 semanal — bonus de reputación",
-        )
+
+        with transaction.atomic():
+            # Guard: skip if this user already received the bonus this week
+            already_awarded = ReputationLog.objects.filter(
+                user=profile.user,
+                reason=bonus_reason,
+                created_at__gte=week_start,
+            ).exists()
+            if already_awarded:
+                continue
+
+            # Atomic UPDATE — avoids read-modify-write race condition
+            UserProfile.objects.filter(pk=profile.pk).update(
+                reputation_score=F("reputation_score") + 100
+            )
+            ReputationLog.objects.create(
+                user=profile.user,
+                points=100,
+                reason=bonus_reason,
+            )
