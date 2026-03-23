@@ -30,6 +30,7 @@ class RoleFactory(DjangoModelFactory):
 class GenreFactory(DjangoModelFactory):
     class Meta:
         model = Genre
+        django_get_or_create = ["slug"]
 
     name = factory.Sequence(lambda n: f"Genre {n}")
     slug = factory.LazyAttribute(lambda obj: obj.name.lower().replace(" ", "-"))

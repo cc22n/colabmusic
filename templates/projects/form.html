@@ -62,14 +62,47 @@
         {% endif %}
       </div>
 
-      <div class="flex flex-col gap-1">
+      <div
+        x-data="{ genre: '{{ form.genre.value|default:'' }}', otroId: '{{ otro_genre_pk }}' }"
+        class="flex flex-col gap-1">
         <label class="text-sm font-medium text-gray-300" for="{{ form.genre.id_for_label }}">
           Género
         </label>
-        {{ form.genre }}
+        <select
+          x-model="genre"
+          id="{{ form.genre.id_for_label }}"
+          name="{{ form.genre.html_name }}"
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500">
+          <option value="">— Selecciona un género —</option>
+          {% for g in genre_list %}
+          <option value="{{ g.pk }}"
+            {% if form.genre.value|stringformat:"s" == g.pk|stringformat:"s" %}selected{% endif %}>
+            {{ g.name }}
+          </option>
+          {% endfor %}
+        </select>
+
         {% if form.genre.errors %}
         <p class="text-red-400 text-xs">{{ form.genre.errors.0 }}</p>
         {% endif %}
+
+        <!-- Shown only when "Otro" is selected -->
+        <div x-show="otroId && genre == otroId" x-transition x-cloak>
+          <input
+            type="text"
+            name="genre_custom"
+            :required="genre == otroId"
+            value="{{ form.genre_custom.value|default:'' }}"
+            placeholder="Ej: Bossa nova, Corridos, Afrobeat..."
+            class="w-full bg-gray-800 border border-purple-600 rounded-lg px-3 py-2
+                   text-white placeholder-gray-500 focus:outline-none focus:border-purple-400 mt-2">
+          <p class="text-xs text-gray-500 mt-1">
+            Si el género ya existe, se reutilizará automáticamente.
+          </p>
+          {% if form.genre_custom.errors %}
+          <p class="text-red-400 text-xs mt-1">{{ form.genre_custom.errors.0 }}</p>
+          {% endif %}
+        </div>
       </div>
     </div>
 

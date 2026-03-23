@@ -41,6 +41,18 @@ class ProjectForm(forms.ModelForm):
         help_text="Etiquetas separadas por coma",
     )
 
+    genre_custom = forms.CharField(
+        required=False,
+        max_length=100,
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "Escribe el nombre del género...",
+                "class": "w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 mt-2",
+            }
+        ),
+        label="Especifica el género",
+    )
+
     class Meta:
         model = Project
         fields = [
@@ -82,6 +94,28 @@ class ProjectForm(forms.ModelForm):
                 attrs={"class": "rounded bg-gray-800 border-gray-700 text-purple-500"}
             ),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        genre = cleaned.get("genre")
+        genre_custom = cleaned.get("genre_custom", "").strip()
+
+        # When the "Otro" sentinel genre is selected, resolve or create the custom genre
+        if genre and genre.slug == "otro":
+            if not genre_custom:
+                self.add_error("genre_custom", "Escribe el nombre del género.")
+            else:
+                from django.utils.text import slugify
+
+                from apps.accounts.models import Genre
+
+                custom_slug = slugify(genre_custom)
+                custom_genre, _ = Genre.objects.get_or_create(
+                    slug=custom_slug,
+                    defaults={"name": genre_custom.strip().title()},
+                )
+                cleaned["genre"] = custom_genre
+        return cleaned
 
     def save(self, commit=True):
         project = super().save(commit=commit)

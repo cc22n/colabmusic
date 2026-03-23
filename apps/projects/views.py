@@ -40,12 +40,22 @@ def _check_upload_rate_limit(user_id: int) -> bool:
 
 
 def _increment_upload_count(user_id: int) -> None:
-    """Increment the per-user upload counter (expires in 1 hour)."""
+    """
+    Increment the per-user upload counter (expires in 1 hour).
+
+    Uses cache.add() (atomic set-if-not-exists) to avoid a TOCTOU race condition
+    where two concurrent requests both see cache.incr() raise ValueError and both
+    call cache.set(key, 1), causing one increment to be lost and effectively
+    allowing more uploads than the intended limit.
+    """
     key = f"upload_rate:{user_id}"
-    try:
+    # add() is atomic: sets the key only if it does not already exist.
+    # If add() returns False, the key exists — safe to incr().
+    # If add() returns True, the key was just created at 0 — incr to 1.
+    if not cache.add(key, 0, timeout=3600):
         cache.incr(key)
-    except ValueError:
-        cache.set(key, 1, timeout=3600)
+    else:
+        cache.incr(key)
 
 
 def _validate_audio_mime(request, form, file_key="original_file"):
@@ -211,6 +221,11 @@ class ProjectCreateView(LoginRequiredMixin, CreateView):
         ctx = super().get_context_data(**kwargs)
         ctx["action"] = "Crear proyecto"
         ctx["page_title"] = "Nuevo Proyecto"
+        ctx["genre_list"] = Genre.objects.all().order_by("name")
+        try:
+            ctx["otro_genre_pk"] = Genre.objects.get(slug="otro").pk
+        except Genre.DoesNotExist:
+            ctx["otro_genre_pk"] = ""
         return ctx
 
 
@@ -238,6 +253,11 @@ class ProjectUpdateView(LoginRequiredMixin, UpdateView):
         ctx = super().get_context_data(**kwargs)
         ctx["action"] = "Guardar cambios"
         ctx["page_title"] = f"Editar: {self.object.title}"
+        ctx["genre_list"] = Genre.objects.all().order_by("name")
+        try:
+            ctx["otro_genre_pk"] = Genre.objects.get(slug="otro").pk
+        except Genre.DoesNotExist:
+            ctx["otro_genre_pk"] = ""
         return ctx
 
 
