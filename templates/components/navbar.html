@@ -24,10 +24,16 @@
         </a>
         <a href="/accounts/logout/" class="text-gray-400 hover:text-white transition-colors text-sm">Salir</a>
         {% else %}
+        {% with path=request.path %}
+        {% if '/login' not in path %}
         <a href="/accounts/login/" class="text-gray-300 hover:text-white transition-colors text-sm">Iniciar sesión</a>
+        {% endif %}
+        {% if '/signup' not in path %}
         <a href="/accounts/signup/" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
           Registrarse
         </a>
+        {% endif %}
+        {% endwith %}
         {% endif %}
       </div>
 
@@ -60,8 +66,14 @@
       <a href="/accounts/profile/{{ user.username }}/" class="block text-gray-300 hover:text-white py-2 text-sm">{{ user.username }}</a>
       <a href="/accounts/logout/" class="block text-gray-400 hover:text-white py-2 text-sm">Salir</a>
       {% else %}
+      {% with path=request.path %}
+      {% if '/login' not in path %}
       <a href="/accounts/login/" class="block text-gray-300 hover:text-white py-2 text-sm">Iniciar sesión</a>
+      {% endif %}
+      {% if '/signup' not in path %}
       <a href="/accounts/signup/" class="block text-purple-400 py-2 text-sm font-medium">Registrarse</a>
+      {% endif %}
+      {% endwith %}
       {% endif %}
     </div>
   </div>

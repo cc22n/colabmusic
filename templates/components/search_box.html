@@ -1,12 +1,4 @@
 {% load i18n %}
-{#
-  Navbar search box with floating HTMX dropdown.
-  Included inside the desktop nav of navbar.html.
-  Alpine: open/close dropdown on input / click-outside / Escape.
-  HTMX: fetches /search/results/?limit=5 on keyup, populates #navbar-search-dropdown.
-  Enter: redirects to /search/?q=<query>.
-#}
-
 <div
   x-data="{ open: false, q: '' }"
   @click.outside="open = false"
